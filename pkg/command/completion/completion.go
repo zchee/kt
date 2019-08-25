@@ -6,6 +6,7 @@ package completion
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -60,7 +61,7 @@ var (
 )
 
 // NewCmdCompletion creates the `completion` command.
-func NewCmdCompletion(out io.Writer, boilerPlate string) *cobra.Command {
+func NewCmdCompletion(_ context.Context, out io.Writer, boilerPlate string) *cobra.Command {
 	shells := []string{}
 	for s := range completionShells {
 		shells = append(shells, s)

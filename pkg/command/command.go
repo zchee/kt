@@ -6,6 +6,7 @@
 package command
 
 import (
+	"context"
 	"flag"
 	"io"
 	"os"
@@ -24,12 +25,12 @@ kt tails the Kubernetes logs for a container in a pod or specified resource.`
 )
 
 // NewCommand creates the `kt` command with arguments.
-func NewCommand() *cobra.Command {
-	return NewKTCommand(os.Stdin, os.Stdout, os.Stderr)
+func NewCommand(ctx context.Context) *cobra.Command {
+	return NewKTCommand(ctx, os.Stdin, os.Stdout, os.Stderr)
 }
 
 // NewKTCommand creates the `kt` command and its nested children.
-func NewKTCommand(in io.Reader, out, err io.Writer) *cobra.Command {
+func NewKTCommand(ctx context.Context, in io.Reader, out, err io.Writer) *cobra.Command {
 	// Parent command to which all subcommands are added.
 	cmds := &cobra.Command{
 		Use:   "kt",
@@ -55,7 +56,7 @@ func NewKTCommand(in io.Reader, out, err io.Writer) *cobra.Command {
 
 	ioStreams := genericclioptions.IOStreams{In: in, Out: out, ErrOut: err}
 
-	cmds.AddCommand(completion.NewCmdCompletion(ioStreams.Out, ""))
+	cmds.AddCommand(completion.NewCmdCompletion(ctx, ioStreams.Out, ""))
 
 	return cmds
 }

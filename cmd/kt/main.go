@@ -5,6 +5,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 
@@ -12,10 +13,14 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
 	"github.com/zchee/kt/pkg/command"
+	"github.com/zchee/kt/pkg/signalcontext"
 )
 
 func main() {
-	if err := command.NewCommand().Execute(); err != nil {
+	ctx, cancel := context.WithCancel(signalcontext.NewContext())
+	defer cancel()
+
+	if err := command.NewCommand(ctx).Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
