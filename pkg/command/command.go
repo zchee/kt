@@ -1,0 +1,61 @@
+// Copyright 2019 The kt Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
+// Package command provides the kt commands.
+package command
+
+import (
+	"flag"
+	"io"
+	"os"
+
+	"github.com/spf13/cobra"
+
+	"k8s.io/cli-runtime/pkg/genericclioptions"
+
+	"github.com/zchee/kt/pkg/command/completion"
+)
+
+const (
+	usageShort = "kt tails the Kubernetes logs for a container in a pod or specified resource."
+	usageLong  = `
+kt tails the Kubernetes logs for a container in a pod or specified resource.`
+)
+
+// NewCommand creates the `kt` command with arguments.
+func NewCommand() *cobra.Command {
+	return NewKTCommand(os.Stdin, os.Stdout, os.Stderr)
+}
+
+// NewKTCommand creates the `kt` command and its nested children.
+func NewKTCommand(in io.Reader, out, err io.Writer) *cobra.Command {
+	// Parent command to which all subcommands are added.
+	cmds := &cobra.Command{
+		Use:   "kt",
+		Short: usageShort,
+		Long:  usageLong,
+		Run: func(cmd *cobra.Command, args []string) {
+			cmd.Help()
+		},
+
+		// Hook before and after Run initialize and write profiles to disk,
+		// respectively.
+		PersistentPreRunE: func(*cobra.Command, []string) error {
+			return initProfiling()
+		},
+		PersistentPostRunE: func(*cobra.Command, []string) error {
+			return flushProfiling()
+		},
+	}
+
+	flags := cmds.PersistentFlags()
+	addProfilingFlags(flags)
+	cmds.PersistentFlags().AddGoFlagSet(flag.CommandLine)
+
+	ioStreams := genericclioptions.IOStreams{In: in, Out: out, ErrOut: err}
+
+	cmds.AddCommand(completion.NewCmdCompletion(ioStreams.Out, ""))
+
+	return cmds
+}
