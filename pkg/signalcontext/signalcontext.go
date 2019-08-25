@@ -69,4 +69,4 @@ func (sctx *signalContext) Err() error {
 }
 
 // Value implements context.Context.
-func (*signalContext) Value(key interface{}) interface{} { return nil }
+func (*signalContext) Value(interface{}) interface{} { return nil }
