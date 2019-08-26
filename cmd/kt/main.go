@@ -6,7 +6,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"os"
 
 	// Initialize all known client auth plugins.
@@ -21,7 +20,6 @@ func main() {
 	defer cancel()
 
 	if err := command.NewCommand(ctx).Execute(); err != nil {
-		fmt.Println(err)
 		os.Exit(1)
 	}
 }
