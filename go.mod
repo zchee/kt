@@ -5,6 +5,7 @@ go 1.12
 require (
 	cloud.google.com/go v0.44.3 // indirect
 	github.com/Azure/go-autorest/autorest/adal v0.6.0 // indirect
+	github.com/go-logr/logr v0.1.0
 	github.com/gophercloud/gophercloud v0.3.0 // indirect
 	github.com/spf13/cobra v0.0.6-0.20190805155617-b80588d523ec
 	github.com/spf13/pflag v1.0.4-0.20190814001055-972238283c06
