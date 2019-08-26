@@ -14,7 +14,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/zchee/kt/pkg/command/completion"
-	"github.com/zchee/kt/pkg/command/options"
+	cmdoptions "github.com/zchee/kt/pkg/command/options"
 )
 
 const (
@@ -52,7 +52,7 @@ func NewKTCommand(ctx context.Context, in io.Reader, out, err io.Writer) *cobra.
 	addProfilingFlags(flags)
 	cmds.PersistentFlags().AddGoFlagSet(flag.CommandLine)
 
-	ioStreams := options.IOStreams{In: in, Out: out, ErrOut: err}
+	ioStreams := cmdoptions.IOStreams{In: in, Out: out, ErrOut: err}
 
 	cmds.AddCommand(completion.NewCmdCompletion(ctx, ioStreams.Out, ""))
 
