@@ -119,7 +119,7 @@ pkg/install: GO_LDFLAGS=
 pkg/install: GO_BUILDTAGS=
 pkg/install:
 	$(call target)
-	GO111MODULE=on CGO_ENABLED=$(CGO_ENABLED) GOOS=$(GO_OS) GOARCH=$(GO_ARCH) go install -v ${GO_APP_PKGS}
+	GO111MODULE=on CGO_ENABLED=$(CGO_ENABLED) GOOS=$(GO_OS) GOARCH=$(GO_ARCH) go install -v ${GO_PACKAGES}
 
 ## test, bench and coverage
 
