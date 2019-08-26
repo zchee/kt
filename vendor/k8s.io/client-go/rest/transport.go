@@ -61,10 +61,9 @@ func HTTPWrappersForConfig(config *Config, rt http.RoundTripper) (http.RoundTrip
 // TransportConfig converts a client config to an appropriate transport config.
 func (c *Config) TransportConfig() (*transport.Config, error) {
 	conf := &transport.Config{
-		UserAgent:          c.UserAgent,
-		Transport:          c.Transport,
-		WrapTransport:      c.WrapTransport,
-		DisableCompression: c.DisableCompression,
+		UserAgent:     c.UserAgent,
+		Transport:     c.Transport,
+		WrapTransport: c.WrapTransport,
 		TLS: transport.TLSConfig{
 			Insecure:   c.Insecure,
 			ServerName: c.ServerName,
@@ -75,10 +74,9 @@ func (c *Config) TransportConfig() (*transport.Config, error) {
 			KeyFile:    c.KeyFile,
 			KeyData:    c.KeyData,
 		},
-		Username:        c.Username,
-		Password:        c.Password,
-		BearerToken:     c.BearerToken,
-		BearerTokenFile: c.BearerTokenFile,
+		Username:    c.Username,
+		Password:    c.Password,
+		BearerToken: c.BearerToken,
 		Impersonate: transport.ImpersonationConfig{
 			UserName: c.Impersonate.UserName,
 			Groups:   c.Impersonate.Groups,
