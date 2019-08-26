@@ -15,6 +15,7 @@ import (
 
 	"github.com/zchee/kt/pkg/command/completion"
 	cmdoptions "github.com/zchee/kt/pkg/command/options"
+	"github.com/zchee/kt/pkg/command/tail"
 )
 
 const (
@@ -54,6 +55,7 @@ func NewKTCommand(ctx context.Context, in io.Reader, out, err io.Writer) *cobra.
 
 	ioStreams := cmdoptions.IOStreams{In: in, Out: out, ErrOut: err}
 
+	cmds.AddCommand(tail.NewCmdTail(ctx, ioStreams))
 	cmds.AddCommand(completion.NewCmdCompletion(ctx, ioStreams.Out, ""))
 
 	return cmds
