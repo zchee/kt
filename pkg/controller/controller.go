@@ -5,49 +5,87 @@
 package controller
 
 import (
-	"flag"
+	"context"
 
 	"github.com/go-logr/logr"
 
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	kubescheme "k8s.io/client-go/kubernetes/scheme"
-	ctrlconfig "sigs.k8s.io/controller-runtime/pkg/client/config"
+	"k8s.io/client-go/rest"
+	ctrlbuilder "sigs.k8s.io/controller-runtime/pkg/builder"
+	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
+	ctrlcontroller "sigs.k8s.io/controller-runtime/pkg/controller"
 	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
 	ctrlzap "sigs.k8s.io/controller-runtime/pkg/log/zap"
 	ctrlmanager "sigs.k8s.io/controller-runtime/pkg/manager"
+	ctrlreconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
+)
+
+var (
+	scheme        = runtime.NewScheme()
+	controllerLog = ctrllog.Log.WithName("controller")
 )
 
 type Controller struct {
-	log                  logr.Logger
-	metricsAddr          string
-	enableLeaderElection bool
+	ctrlclient.Client
+	ctrlmanager.Manager
+	Log logr.Logger
+
+	ctx         context.Context
+	concurrency int
 }
 
-var (
-	scheme = runtime.NewScheme()
-)
-
-func NewController() (ctrlmanager.Manager, error) {
+func NewController(ctx context.Context, config *rest.Config, concurrency int) (*Controller, error) {
 	kubescheme.AddToScheme(scheme)
-
-	c := &Controller{
-		log: ctrllog.NewDelegatingLogger(ctrllog.NullLogger{}),
-	}
-	flag.StringVar(&c.metricsAddr, "metrics-addr", ":8080", "The address the metric endpoint binds to.")
-	flag.BoolVar(&c.enableLeaderElection, "enable-leader-election", false, "Enable leader election for controller manager. Enabling this will ensure there is only one active controller manager.")
-	flag.Parse()
 
 	ctrllog.SetLogger(ctrlzap.Logger(true))
 
-	mgr, err := ctrlmanager.New(ctrlconfig.GetConfigOrDie(), ctrlmanager.Options{
+	mgrOpts := ctrlmanager.Options{
 		Scheme:             scheme,
-		MetricsBindAddress: c.metricsAddr,
-		LeaderElection:     c.enableLeaderElection,
-	})
+		MetricsBindAddress: "0",
+	}
+	mgr, err := ctrlmanager.New(config, mgrOpts)
 	if err != nil {
-		c.log.Error(err, "unable to start manager")
+		controllerLog.Error(err, "unable to create manager")
 		return nil, err
 	}
 
-	return mgr, nil
+	c := &Controller{
+		Client:      mgr.GetClient(),
+		Manager:     mgr,
+		Log:         controllerLog,
+		ctx:         ctx,
+		concurrency: concurrency,
+	}
+	if err := c.SetupWithManager(mgr); err != nil {
+		controllerLog.Error(err, "unable to create controller")
+	}
+
+	return c, nil
+}
+
+func (c *Controller) Reconcile(req ctrlreconcile.Request) (ctrlreconcile.Result, error) {
+	log := c.Log.WithValues("pod", req.NamespacedName)
+
+	var pod corev1.Pod
+	if err := c.Get(c.ctx, req.NamespacedName, &pod); err != nil {
+		if ctrlclient.IgnoreNotFound(err) != nil {
+			log.Error(err, "unable to get pod")
+			return ctrlreconcile.Result{}, err
+		}
+		return ctrlreconcile.Result{}, nil
+	}
+
+	log.Info("pod", "pod", pod)
+
+	return ctrlreconcile.Result{}, nil
+}
+
+func (c *Controller) SetupWithManager(mgr ctrlmanager.Manager) error {
+	ctrlOpts := ctrlcontroller.Options{
+		Reconciler:              c,
+		MaxConcurrentReconciles: c.concurrency,
+	}
+	return ctrlbuilder.ControllerManagedBy(mgr).For(&corev1.Pod{}).WithOptions(ctrlOpts).Complete(c)
 }
