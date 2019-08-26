@@ -16,41 +16,41 @@ import (
 
 var (
 	completionLong = `
-		Output shell completion code for the specified shell (bash or zsh).
-		The shell code must be evaluated to provide interactive
-		completion of kt commands.  This can be done by sourcing it from
-		the .bash_profile.
+Output shell completion code for the specified shell (bash or zsh).
+The shell code must be evaluated to provide interactive
+completion of kt commands.  This can be done by sourcing it from
+the .bash_profile.
 
-		Note for zsh users: [1] zsh completions are only supported in versions of zsh >= 5.2`
+Note for zsh users: [1] zsh completions are only supported in versions of zsh >= 5.2`
 
 	completionExample = `
-		# Installing bash completion on macOS using homebrew
-		## If running Bash 3.2 included with macOS
-		    brew install bash-completion
-		## or, if running Bash 4.1+
-		    brew install bash-completion@2
-		## If kt is installed via homebrew, this should start working immediately.
-		## If you've installed via other means, you may need add the completion to your completion directory
-		    kt completion bash > $(brew --prefix)/etc/bash_completion.d/kt
+# Installing bash completion on macOS using homebrew
+## If running Bash 3.2 included with macOS
+    brew install bash-completion
+## or, if running Bash 4.1+
+    brew install bash-completion@2
+## If kt is installed via homebrew, this should start working immediately.
+## If you've installed via other means, you may need add the completion to your completion directory
+    kt completion bash > $(brew --prefix)/etc/bash_completion.d/kt
 
 
-		# Installing bash completion on Linux
-		## If bash-completion is not installed on Linux, please install the 'bash-completion' package
-		## via your distribution's package manager.
-		## Load the kt completion code for bash into the current shell
-		    source <(kt completion bash)
-		## Write bash completion code to a file and source if from .bash_profile
-		    kt completion bash > ~/.kube/completion.bash.inc
-		    printf "
-		      # kt shell completion
-		      source '$HOME/.kube/completion.bash.inc'
-		      " >> $HOME/.bash_profile
-		    source $HOME/.bash_profile
+# Installing bash completion on Linux
+## If bash-completion is not installed on Linux, please install the 'bash-completion' package
+## via your distribution's package manager.
+## Load the kt completion code for bash into the current shell
+    source <(kt completion bash)
+## Write bash completion code to a file and source if from .bash_profile
+    kt completion bash > ~/.kube/completion.kt.bash.inc
+    printf "
+      # kt shell completion
+      source '$HOME/.kube/completion.kt.bash.inc'
+      " >> $HOME/.bash_profile
+    source $HOME/.bash_profile
 
-		# Load the kt completion code for zsh[1] into the current shell
-		    source <(kt completion zsh)
-		# Set the kt completion code for zsh[1] to autoload on startup
-		    kt completion zsh > "${fpath[1]}/_kt"`
+# Load the kt completion code for zsh[1] into the current shell
+    source <(kt completion zsh)
+# Set the kt completion code for zsh[1] to autoload on startup
+    kt completion zsh > "${fpath[1]}/_kt"`
 )
 
 var (
