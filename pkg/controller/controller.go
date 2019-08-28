@@ -36,6 +36,8 @@ type Controller struct {
 	concurrency int
 }
 
+var _ ctrlreconcile.Reconciler = (*Controller)(nil)
+
 func NewController(ctx context.Context, config *rest.Config, concurrency int) (*Controller, error) {
 	kubescheme.AddToScheme(scheme)
 
