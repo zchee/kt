@@ -4,7 +4,7 @@
 
 module github.com/zchee/kt
 
-go 1.13
+go 1.12
 
 require (
 	cloud.google.com/go v0.44.3 // indirect
