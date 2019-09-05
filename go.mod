@@ -4,23 +4,25 @@
 
 module github.com/zchee/kt
 
-go 1.12
+go 1.13
 
 require (
 	cloud.google.com/go v0.44.3 // indirect
+	github.com/Azure/go-autorest v11.1.2+incompatible // indirect
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
 	github.com/go-logr/logr v0.1.1-0.20190903151443-a1ebd699b195
 	github.com/gogo/protobuf v1.2.2-0.20190723190241-65acae22fc9d // indirect
-	github.com/google/go-cmp v0.3.1 // indirect
+	github.com/google/go-cmp v0.3.2-0.20190829225427-b1c9c4891a65
 	github.com/gophercloud/gophercloud v0.4.0 // indirect
+	github.com/modern-go/reflect2 v1.0.1 // indirect
 	github.com/spf13/cobra v0.0.6-0.20190805155617-b80588d523ec
 	github.com/spf13/pflag v1.0.4-0.20190814001055-972238283c06
 	go.opencensus.io v0.22.0
 	golang.org/x/sys v0.0.0-20190904005037-43c01164e931
 	golang.org/x/xerrors v0.0.0-20190717185122-a985d3407aa7
-	k8s.io/api v0.0.0-20190620084959-7cf5895f2711
-	k8s.io/apimachinery v0.0.0-20190612205821-1799e75a0719
-	k8s.io/client-go v12.0.0+incompatible
+	k8s.io/api v0.0.0-20190409021203-6e4e0e4f393b
+	k8s.io/apimachinery v0.0.0-20190404173353-6a84e37a896d
+	k8s.io/client-go v11.0.1-0.20190409021438-1a26190bd76a+incompatible
 	sigs.k8s.io/controller-runtime v0.2.0-beta.1.0.20190903184459-ab6131a999ca
 )
 
@@ -51,7 +53,7 @@ replace (
 	github.com/golang/mock => github.com/golang/mock v1.3.1
 	github.com/golang/protobuf => github.com/golang/protobuf v1.3.2
 	github.com/google/btree => github.com/google/btree v1.0.0
-	github.com/google/go-cmp => github.com/google/go-cmp v0.3.1
+	github.com/google/go-cmp => github.com/google/go-cmp v0.3.2-0.20190829225427-b1c9c4891a65
 	github.com/google/gofuzz => github.com/google/gofuzz v0.0.0-20170612174753-24818f796faf
 	github.com/google/martian => github.com/google/martian v2.1.0+incompatible
 	github.com/google/pprof => github.com/google/pprof v0.0.0-20190515194954-54271f7e092f
@@ -77,7 +79,7 @@ replace (
 	github.com/mitchellh/go-homedir => github.com/mitchellh/go-homedir v1.1.0
 	github.com/mitchellh/mapstructure => github.com/mitchellh/mapstructure v1.1.2
 	github.com/modern-go/concurrent => github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd
-	github.com/modern-go/reflect2 => github.com/modern-go/reflect2 v0.0.0-20180701023420-4b7aa43c6742
+	github.com/modern-go/reflect2 => github.com/modern-go/reflect2 v1.0.1
 	github.com/mxk/go-flowrate => github.com/mxk/go-flowrate v0.0.0-20140419014527-cca7078d478f
 	github.com/onsi/ginkgo => github.com/onsi/ginkgo v1.6.0
 	github.com/onsi/gomega => github.com/onsi/gomega v1.4.2
@@ -129,10 +131,10 @@ replace (
 	gopkg.in/tomb.v1 => gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7
 	gopkg.in/yaml.v2 => gopkg.in/yaml.v2 v2.2.2
 	honnef.co/go/tools => honnef.co/go/tools v0.0.0-20190418001031-e561f6794a2a
-	k8s.io/api => k8s.io/api v0.0.0-20190620084959-7cf5895f2711
+	k8s.io/api => k8s.io/api v0.0.0-20190409021203-6e4e0e4f393b
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.0.0-20190409022649-727a075fdec8
-	k8s.io/apimachinery => k8s.io/apimachinery v0.0.0-20190612205821-1799e75a0719
-	k8s.io/client-go => k8s.io/client-go v12.0.0+incompatible
+	k8s.io/apimachinery => k8s.io/apimachinery v0.0.0-20190404173353-6a84e37a896d
+	k8s.io/client-go => k8s.io/client-go v11.0.1-0.20190409021438-1a26190bd76a+incompatible
 	k8s.io/klog => k8s.io/klog v0.3.0
 	k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20180731170545-e3762e86a74c
 	k8s.io/utils => k8s.io/utils v0.0.0-20190506122338-8fab8cb257d5
