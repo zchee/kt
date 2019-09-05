@@ -1,0 +1,35 @@
+# For Kubernetes 1.14.x
+---
+kind: Cluster
+apiVersion: kind.sigs.k8s.io/v1alpha3
+# kubeadmConfigPatches:  # https://kubernetes.io/docs/reference/command-line-tools-reference/feature-gates/
+# - |
+#   apiVersion: kubeadm.k8s.io/v1beta2
+#   kind: InitConfiguration
+#   metadata:
+#     name: init
+#   nodeRegistration:
+#     kubeletExtraArgs:
+#       "feature-gates": "CustomResourcePublishOpenAPI=true,ExpandCSIVolumes=true,StorageVersionHash=true,VolumeSubpathEnvExpansion=true"
+# - |
+#   apiVersion: kubeadm.k8s.io/v1beta2
+#   kind: ClusterConfiguration
+#   metadata:
+#     name: config
+#   apiServer:
+#     extraArgs:
+#       "feature-gates": "CustomResourcePublishOpenAPI=true,ExpandCSIVolumes=true,StorageVersionHash=true,VolumeSubpathEnvExpansion=true"
+
+# networking:
+#   ipFamily: ipv6  # ipv4, ipv6
+
+nodes:  # three node (two workers) cluster config
+- role: control-plane
+- role: worker
+  # extraPortMappings:
+  # - listenAddress: "0.0.0.0"  # Optional, defaults: "0.0.0.0"
+  #   protocol: tcp # Optional, available values are tcp or udp. defaults: tcp
+- role: worker
+  # extraPortMappings:
+  # - listenAddress: "0.0.0.0"  # Optional, defaults: "0.0.0.0"
+  #   protocol: tcp # Optional, available values are tcp or udp. defaults: tcp
