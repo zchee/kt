@@ -1,4 +1,4 @@
-// Copyright 2016 Google Inc.  All rights reserved.
+// Copyright 2015 Google Inc.  All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -6,6 +6,7 @@ package uuid
 
 import (
 	"database/sql/driver"
+	"errors"
 	"fmt"
 )
 
@@ -13,36 +14,42 @@ import (
 // Currently, database types that map to string and []byte are supported. Please
 // consult database-specific driver documentation for matching types.
 func (uuid *UUID) Scan(src interface{}) error {
-	switch src := src.(type) {
-	case nil:
-		return nil
-
+	switch src.(type) {
 	case string:
 		// if an empty UUID comes from a table, we return a null UUID
-		if src == "" {
+		if src.(string) == "" {
 			return nil
 		}
 
-		// see Parse for required string format
-		u, err := Parse(src)
-		if err != nil {
-			return fmt.Errorf("Scan: %v", err)
+		// see uuid.Parse for required string format
+		parsed := Parse(src.(string))
+
+		if parsed == nil {
+			return errors.New("Scan: invalid UUID format")
 		}
 
-		*uuid = u
-
+		*uuid = parsed
 	case []byte:
+		b := src.([]byte)
+
 		// if an empty UUID comes from a table, we return a null UUID
-		if len(src) == 0 {
+		if len(b) == 0 {
 			return nil
 		}
 
 		// assumes a simple slice of bytes if 16 bytes
 		// otherwise attempts to parse
-		if len(src) != 16 {
-			return uuid.Scan(string(src))
+		if len(b) == 16 {
+			*uuid = UUID(b)
+		} else {
+			u := Parse(string(b))
+
+			if u == nil {
+				return errors.New("Scan: invalid UUID format")
+			}
+
+			*uuid = u
 		}
-		copy((*uuid)[:], src)
 
 	default:
 		return fmt.Errorf("Scan: unable to scan type %T into UUID", src)
