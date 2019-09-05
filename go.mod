@@ -8,7 +8,7 @@ go 1.12
 
 require (
 	cloud.google.com/go v0.44.3 // indirect
-	github.com/Azure/go-autorest/autorest/adal v0.6.0 // indirect
+	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
 	github.com/go-logr/logr v0.1.1-0.20190903151443-a1ebd699b195
 	github.com/gogo/protobuf v1.2.2-0.20190723190241-65acae22fc9d // indirect
 	github.com/google/go-cmp v0.3.1 // indirect
@@ -18,21 +18,16 @@ require (
 	go.opencensus.io v0.22.0
 	golang.org/x/sys v0.0.0-20190904005037-43c01164e931
 	golang.org/x/xerrors v0.0.0-20190717185122-a985d3407aa7
-	k8s.io/api v0.0.0-20190409021203-6e4e0e4f393b
-	k8s.io/apimachinery v0.0.0-20190404173353-6a84e37a896d
-	k8s.io/client-go v11.0.1-0.20190409021438-1a26190bd76a+incompatible
+	k8s.io/api v0.0.0-20190620084959-7cf5895f2711
+	k8s.io/apimachinery v0.0.0-20190612205821-1799e75a0719
+	k8s.io/client-go v12.0.0+incompatible
 	sigs.k8s.io/controller-runtime v0.2.0-beta.1.0.20190903184459-ab6131a999ca
 )
 
 replace (
 	cloud.google.com/go => cloud.google.com/go v0.44.3
 	cloud.google.com/go/datastore => cloud.google.com/go/datastore v1.0.0
-	github.com/Azure/go-autorest/autorest => github.com/Azure/go-autorest/autorest v0.9.0
-	github.com/Azure/go-autorest/autorest/adal => github.com/Azure/go-autorest/autorest/adal v0.6.0
-	github.com/Azure/go-autorest/autorest/date => github.com/Azure/go-autorest/autorest/date v0.2.0
-	github.com/Azure/go-autorest/autorest/mocks => github.com/Azure/go-autorest/autorest/mocks v0.3.0
-	github.com/Azure/go-autorest/logger => github.com/Azure/go-autorest/logger v0.1.0
-	github.com/Azure/go-autorest/tracing => github.com/Azure/go-autorest/tracing v0.5.0
+	github.com/Azure/go-autorest => github.com/Azure/go-autorest v11.1.2+incompatible
 	github.com/BurntSushi/toml => github.com/BurntSushi/toml v0.3.1
 	github.com/BurntSushi/xgb => github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802
 	github.com/armon/consul-api => github.com/armon/consul-api v0.0.0-20180202201655-eb2c6b5be1b6
@@ -44,6 +39,8 @@ replace (
 	github.com/cpuguy83/go-md2man => github.com/cpuguy83/go-md2man v1.0.10
 	github.com/davecgh/go-spew => github.com/davecgh/go-spew v1.1.1
 	github.com/dgrijalva/jwt-go => github.com/dgrijalva/jwt-go v3.2.0+incompatible
+	github.com/docker/spdystream => github.com/docker/spdystream v0.0.0-20160310174837-449fdfce4d96
+	github.com/elazarl/goproxy => github.com/elazarl/goproxy v0.0.0-20170405201442-c4fc26588b6e
 	github.com/evanphx/json-patch => github.com/evanphx/json-patch v4.5.0+incompatible
 	github.com/fsnotify/fsnotify => github.com/fsnotify/fsnotify v1.4.7
 	github.com/go-logr/logr => github.com/go-logr/logr v0.1.1-0.20190903151443-a1ebd699b195
@@ -58,9 +55,11 @@ replace (
 	github.com/google/gofuzz => github.com/google/gofuzz v0.0.0-20170612174753-24818f796faf
 	github.com/google/martian => github.com/google/martian v2.1.0+incompatible
 	github.com/google/pprof => github.com/google/pprof v0.0.0-20190515194954-54271f7e092f
+	github.com/google/uuid => github.com/google/uuid v1.0.0
 	github.com/googleapis/gax-go/v2 => github.com/googleapis/gax-go/v2 v2.0.5
 	github.com/googleapis/gnostic => github.com/googleapis/gnostic v0.2.0
 	github.com/gophercloud/gophercloud => github.com/gophercloud/gophercloud v0.4.0
+	github.com/gregjones/httpcache => github.com/gregjones/httpcache v0.0.0-20170728041850-787624de3eb7
 	github.com/hashicorp/golang-lru => github.com/hashicorp/golang-lru v0.5.1
 	github.com/hashicorp/hcl => github.com/hashicorp/hcl v1.0.0
 	github.com/hpcloud/tail => github.com/hpcloud/tail v1.0.0
@@ -79,10 +78,12 @@ replace (
 	github.com/mitchellh/mapstructure => github.com/mitchellh/mapstructure v1.1.2
 	github.com/modern-go/concurrent => github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd
 	github.com/modern-go/reflect2 => github.com/modern-go/reflect2 v0.0.0-20180701023420-4b7aa43c6742
+	github.com/mxk/go-flowrate => github.com/mxk/go-flowrate v0.0.0-20140419014527-cca7078d478f
 	github.com/onsi/ginkgo => github.com/onsi/ginkgo v1.6.0
 	github.com/onsi/gomega => github.com/onsi/gomega v1.4.2
 	github.com/pborman/uuid => github.com/pborman/uuid v0.0.0-20170612153648-e790cca94e6c
 	github.com/pelletier/go-toml => github.com/pelletier/go-toml v1.2.0
+	github.com/peterbourgon/diskv => github.com/peterbourgon/diskv v2.0.1+incompatible
 	github.com/pkg/errors => github.com/pkg/errors v0.8.1
 	github.com/pmezard/go-difflib => github.com/pmezard/go-difflib v1.0.0
 	github.com/prometheus/client_golang => github.com/prometheus/client_golang v0.9.0
@@ -128,10 +129,10 @@ replace (
 	gopkg.in/tomb.v1 => gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7
 	gopkg.in/yaml.v2 => gopkg.in/yaml.v2 v2.2.2
 	honnef.co/go/tools => honnef.co/go/tools v0.0.0-20190418001031-e561f6794a2a
-	k8s.io/api => k8s.io/api v0.0.0-20190409021203-6e4e0e4f393b
+	k8s.io/api => k8s.io/api v0.0.0-20190620084959-7cf5895f2711
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.0.0-20190409022649-727a075fdec8
-	k8s.io/apimachinery => k8s.io/apimachinery v0.0.0-20190404173353-6a84e37a896d
-	k8s.io/client-go => k8s.io/client-go v11.0.0+incompatible
+	k8s.io/apimachinery => k8s.io/apimachinery v0.0.0-20190612205821-1799e75a0719
+	k8s.io/client-go => k8s.io/client-go v12.0.0+incompatible
 	k8s.io/klog => k8s.io/klog v0.3.0
 	k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20180731170545-e3762e86a74c
 	k8s.io/utils => k8s.io/utils v0.0.0-20190506122338-8fab8cb257d5
