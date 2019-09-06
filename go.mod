@@ -17,7 +17,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.1 // indirect
 	github.com/spf13/cobra v0.0.6-0.20190805155617-b80588d523ec
 	github.com/spf13/pflag v1.0.4-0.20190814001055-972238283c06
-	go.opencensus.io v0.22.0
+	go.opencensus.io v0.22.1
 	golang.org/x/sys v0.0.0-20190904005037-43c01164e931
 	golang.org/x/xerrors v0.0.0-20190717185122-a985d3407aa7
 	k8s.io/api v0.0.0-20190409021203-6e4e0e4f393b
