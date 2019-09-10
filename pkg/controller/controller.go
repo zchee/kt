@@ -10,6 +10,7 @@ import (
 	"github.com/go-logr/logr"
 
 	corev1 "k8s.io/api/core/v1"
+	toolscache "k8s.io/client-go/tools/cache"
 	ctrlbuilder "sigs.k8s.io/controller-runtime/pkg/builder"
 	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
 	ctrlcontroller "sigs.k8s.io/controller-runtime/pkg/controller"
@@ -40,6 +41,7 @@ func NewController(ctx context.Context, mgr ctrlmanager.Manager, concurrency int
 
 	c := &Controller{
 		Client:      mgr.GetClient(),
+		Manager:     mgr,
 		Log:         controllerLog,
 		ctx:         ctx,
 		concurrency: concurrency,
@@ -51,21 +53,32 @@ func NewController(ctx context.Context, mgr ctrlmanager.Manager, concurrency int
 	return c, nil
 }
 
-func (c *Controller) Reconcile(req ctrlreconcile.Request) (ctrlreconcile.Result, error) {
-	log := c.Log.WithValues("pod", req.NamespacedName)
+func (c *Controller) Reconcile(req ctrlreconcile.Request) (result ctrlreconcile.Result, err error) {
+	log := c.Log.WithValues("controller", "Reconcile")
 
 	var pod corev1.Pod
 	if err := c.Get(c.ctx, req.NamespacedName, &pod); err != nil {
 		if ctrlclient.IgnoreNotFound(err) != nil {
-			log.Error(err, "unable to get pod")
+			log.Error(err, "failed to get pod")
 			return ctrlreconcile.Result{}, err
 		}
-		return ctrlreconcile.Result{}, nil
+		return result, nil
 	}
 
-	log.Info("pod", "pod", pod)
+	cache := c.Manager.GetCache()
+	informer, err := cache.GetInformer(&pod)
+	// informer, err := cache.GetInformerForKind(pod.GroupVersionKind())
+	if err != nil {
+		log.Error(err, "failed to get informer")
+		return result, err
+	}
+	informer.AddEventHandler(toolscache.ResourceEventHandlerFuncs{
+		AddFunc:    func(obj interface{}) { log.Info("AddFunc", "obj", obj) },
+		UpdateFunc: func(oldObj, newObj interface{}) { log.Info("UpdateFunc", "oldObj", oldObj, "newObj", newObj) },
+		DeleteFunc: func(obj interface{}) { log.Info("DeleteFunc", "obj", obj) },
+	})
 
-	return ctrlreconcile.Result{}, nil
+	return result, nil
 }
 
 func (c *Controller) SetupWithManager(mgr ctrlmanager.Manager) error {
