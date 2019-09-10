@@ -13,7 +13,8 @@ import (
 
 	cmdoptions "github.com/zchee/kt/pkg/command/options"
 	"github.com/zchee/kt/pkg/controller"
-	"github.com/zchee/kt/pkg/kube"
+	"github.com/zchee/kt/pkg/kubeconfig"
+	"github.com/zchee/kt/pkg/manager"
 )
 
 const (
@@ -22,6 +23,7 @@ const (
 
 type Tail struct {
 	ctrl        *controller.Controller
+	mgr         *manager.Manager
 	kubeconfig  string
 	concurrency int
 }
@@ -39,14 +41,19 @@ func NewCmdTail(ctx context.Context, ioStreams cmdoptions.IOStreams) *cobra.Comm
 	f.IntVarP(&t.concurrency, "concurrency", "c", 1, "max concurrent reconciler.")
 
 	cmd.PreRunE = func(*cobra.Command, []string) error {
-		config, err := kube.RestConfig(t.kubeconfig)
+		config, err := kubeconfig.RestConfig(t.kubeconfig)
 		if err != nil {
 			return errors.Errorf("unable create rest config: %w", err)
 		}
 		// TODO(zchee): inject OpenCensus RoundTripper
 		// config.Transport = trace.Transport()
 
-		t.ctrl, err = controller.NewController(ctx, config, t.concurrency)
+		t.mgr, err = manager.NewManager(config)
+		if err != nil {
+			return errors.Errorf("unable create manager: %w", err)
+		}
+
+		t.ctrl, err = controller.NewController(ctx, t.mgr, t.concurrency)
 		if err != nil {
 			return errors.Errorf("unable create controller: %w", err)
 		}
@@ -62,5 +69,5 @@ func NewCmdTail(ctx context.Context, ioStreams cmdoptions.IOStreams) *cobra.Comm
 }
 
 func (t *Tail) RunTail(ctx context.Context, ioStreams cmdoptions.IOStreams) error {
-	return t.ctrl.Start(ctx.Done())
+	return t.mgr.Start(ctx.Done())
 }
