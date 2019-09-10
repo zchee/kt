@@ -10,9 +10,6 @@ import (
 	"github.com/go-logr/logr"
 
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	kubescheme "k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/client-go/rest"
 	ctrlbuilder "sigs.k8s.io/controller-runtime/pkg/builder"
 	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
 	ctrlcontroller "sigs.k8s.io/controller-runtime/pkg/controller"
@@ -23,14 +20,13 @@ import (
 )
 
 var (
-	scheme        = runtime.NewScheme()
 	controllerLog = ctrllog.Log.WithName("controller")
 )
 
 type Controller struct {
 	ctrlclient.Client
-	ctrlmanager.Manager
-	Log logr.Logger
+	Manager ctrlmanager.Manager
+	Log     logr.Logger
 
 	ctx         context.Context
 	concurrency int
@@ -38,30 +34,18 @@ type Controller struct {
 
 var _ ctrlreconcile.Reconciler = (*Controller)(nil)
 
-func NewController(ctx context.Context, config *rest.Config, concurrency int) (*Controller, error) {
-	kubescheme.AddToScheme(scheme)
-
+// New returns a new Controller registered with the Manager.
+func NewController(ctx context.Context, mgr ctrlmanager.Manager, concurrency int) (*Controller, error) {
 	ctrllog.SetLogger(ctrlzap.Logger(true))
-
-	mgrOpts := ctrlmanager.Options{
-		Scheme:             scheme,
-		MetricsBindAddress: "0",
-	}
-	mgr, err := ctrlmanager.New(config, mgrOpts)
-	if err != nil {
-		controllerLog.Error(err, "unable to create manager")
-		return nil, err
-	}
 
 	c := &Controller{
 		Client:      mgr.GetClient(),
-		Manager:     mgr,
 		Log:         controllerLog,
 		ctx:         ctx,
 		concurrency: concurrency,
 	}
 	if err := c.SetupWithManager(mgr); err != nil {
-		controllerLog.Error(err, "unable to create controller")
+		controllerLog.Error(err, "failed to create controller")
 	}
 
 	return c, nil
