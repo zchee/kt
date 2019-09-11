@@ -7,22 +7,20 @@ module github.com/zchee/kt
 go 1.13
 
 require (
-	cloud.google.com/go v0.44.3 // indirect
-	github.com/Azure/go-autorest v11.1.2+incompatible // indirect
-	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
+	cloud.google.com/go v0.45.1 // indirect
+	github.com/Azure/go-autorest v0.0.0-00010101000000-000000000000 // indirect
+	github.com/dgrijalva/jwt-go v0.0.0-00010101000000-000000000000 // indirect
 	github.com/go-logr/logr v0.1.1-0.20190903151443-a1ebd699b195
-	github.com/gogo/protobuf v1.2.2-0.20190723190241-65acae22fc9d // indirect
 	github.com/google/go-cmp v0.3.2-0.20190829225427-b1c9c4891a65
-	github.com/gophercloud/gophercloud v0.4.0 // indirect
-	github.com/modern-go/reflect2 v1.0.1 // indirect
+	github.com/gophercloud/gophercloud v0.0.0-00010101000000-000000000000 // indirect
 	github.com/spf13/cobra v0.0.6-0.20190805155617-b80588d523ec
 	github.com/spf13/pflag v1.0.4-0.20190814001055-972238283c06
 	go.opencensus.io v0.22.1
-	go.uber.org/atomic v1.4.0 // indirect
 	go.uber.org/zap v1.10.0
-	golang.org/x/sys v0.0.0-20190904005037-43c01164e931
+	golang.org/x/sys v0.0.0-20190910064555-bbd175535a8b
 	golang.org/x/xerrors v0.0.0-20190717185122-a985d3407aa7
-	k8s.io/api v0.0.0-20190409021203-6e4e0e4f393b
+	k8s.io/api v0.0.0-20190905160310-fb749d2f1064
+	k8s.io/apiextensions-apiserver v0.0.0-20190906235842-a644246473f1 // indirect
 	k8s.io/apimachinery v0.0.0-20190404173353-6a84e37a896d
 	k8s.io/client-go v11.0.1-0.20190409021438-1a26190bd76a+incompatible
 	sigs.k8s.io/controller-runtime v0.2.0-beta.1.0.20190903184459-ab6131a999ca
