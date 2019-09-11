@@ -8,6 +8,7 @@ import (
 	"context"
 
 	"github.com/go-logr/logr"
+	"go.uber.org/zap"
 
 	corev1 "k8s.io/api/core/v1"
 	toolscache "k8s.io/client-go/tools/cache"
@@ -18,10 +19,6 @@ import (
 	ctrlzap "sigs.k8s.io/controller-runtime/pkg/log/zap"
 	ctrlmanager "sigs.k8s.io/controller-runtime/pkg/manager"
 	ctrlreconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
-)
-
-var (
-	controllerLog = ctrllog.Log.WithName("controller")
 )
 
 type Controller struct {
@@ -37,17 +34,22 @@ var _ ctrlreconcile.Reconciler = (*Controller)(nil)
 
 // New returns a new Controller registered with the Manager.
 func NewController(ctx context.Context, mgr ctrlmanager.Manager, concurrency int) (*Controller, error) {
-	ctrllog.SetLogger(ctrlzap.Logger(true))
+	lvl := zap.NewAtomicLevelAt(zap.DebugLevel)
+	logger := ctrlzap.New(func(o *ctrlzap.Options) {
+		o.Level = &lvl
+		o.Development = true
+	})
+	ctrllog.SetLogger(logger)
 
 	c := &Controller{
 		Client:      mgr.GetClient(),
 		Manager:     mgr,
-		Log:         controllerLog,
+		Log:         ctrllog.Log.WithName("controller"),
 		ctx:         ctx,
 		concurrency: concurrency,
 	}
 	if err := c.SetupWithManager(mgr); err != nil {
-		controllerLog.Error(err, "failed to create controller")
+		c.Log.Error(err, "failed to create controller")
 	}
 
 	return c, nil
