@@ -64,25 +64,26 @@ linters:
     - depguard
     - dupl
     - errcheck
+    - funlen
     - goconst
     - gocritic
     - gofmt
     - goimports
     - golint
+    - gosimple
+    - govet
     - ineffassign
+    - interfacer
     - maligned
     - misspell
     - prealloc
+    - staticcheck
     - structcheck
+    - stylecheck
     - typecheck
     - unconvert
-    - varcheck
-    - gosimple
-    - govet
-    - interfacer
-    - staticcheck
-    - stylecheck
     - unparam
+    - varcheck
   disable:
     - gochecknoglobals
     - gochecknoinits
