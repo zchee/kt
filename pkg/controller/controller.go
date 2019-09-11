@@ -62,7 +62,7 @@ func (c *Controller) Reconcile(req ctrlreconcile.Request) (result ctrlreconcile.
 	if err := c.Get(c.ctx, req.NamespacedName, &pod); err != nil {
 		if ctrlclient.IgnoreNotFound(err) != nil {
 			log.Error(err, "failed to get pod")
-			return ctrlreconcile.Result{}, err
+			return result, err
 		}
 		return result, nil
 	}
@@ -80,6 +80,7 @@ func (c *Controller) Reconcile(req ctrlreconcile.Request) (result ctrlreconcile.
 		DeleteFunc: func(obj interface{}) { log.Info("DeleteFunc", "obj", obj) },
 	})
 
+	log.Info("end of Reconcile")
 	return result, nil
 }
 
