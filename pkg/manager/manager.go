@@ -5,6 +5,8 @@
 package manager
 
 import (
+	"go.uber.org/zap"
+
 	"k8s.io/apimachinery/pkg/runtime"
 	kubescheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
@@ -14,8 +16,7 @@ import (
 )
 
 var (
-	scheme     = runtime.NewScheme()
-	managerLog = ctrllog.Log.WithName("manager")
+	scheme = runtime.NewScheme()
 )
 
 // Manager represents a ctrlmanager.Manager.
@@ -27,7 +28,14 @@ type Manager struct {
 func NewManager(config *rest.Config) (*Manager, error) {
 	kubescheme.AddToScheme(scheme)
 
-	ctrllog.SetLogger(ctrlzap.Logger(true))
+	lvl := zap.NewAtomicLevelAt(zap.DebugLevel)
+	logger := ctrlzap.New(func(o *ctrlzap.Options) {
+		o.Level = &lvl
+		o.Development = true
+	})
+	ctrllog.SetLogger(logger)
+
+	managerLog := logger.WithName("manager")
 
 	mgrOpts := ctrlmanager.Options{
 		Scheme:             scheme,
