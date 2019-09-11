@@ -44,7 +44,7 @@ func NewController(ctx context.Context, mgr ctrlmanager.Manager, concurrency int
 	c := &Controller{
 		Client:      mgr.GetClient(),
 		Manager:     mgr,
-		Log:         ctrllog.Log.WithName("controller"),
+		Log:         logger.WithName("controller"),
 		ctx:         ctx,
 		concurrency: concurrency,
 	}
