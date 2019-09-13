@@ -6,8 +6,8 @@ package tail
 
 import (
 	"context"
-	"html/template"
 	"os"
+	"text/template"
 	"time"
 
 	"github.com/spf13/cobra"

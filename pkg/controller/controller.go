@@ -7,9 +7,12 @@ package controller
 import (
 	"bufio"
 	"context"
-	"fmt"
+	"html"
 	"io"
 	"net/http"
+	"strings"
+	"text/template"
+	"time"
 	"unsafe"
 
 	"github.com/go-logr/logr"
@@ -41,6 +44,7 @@ type Controller struct {
 	ctx         context.Context
 	ioStreams   cmdoptions.IOStreams
 	concurrency int
+	tmpl        *template.Template
 }
 
 var _ ctrlreconcile.Reconciler = (*Controller)(nil)
@@ -56,6 +60,12 @@ func WithConcurrency(concurrency int) Options {
 func WithIOStearms(ioStearms cmdoptions.IOStreams) Options {
 	return func(c *Controller) {
 		c.ioStreams = ioStearms
+	}
+}
+
+func WithTemplate(tmpl *template.Template) Options {
+	return func(c *Controller) {
+		c.tmpl = tmpl
 	}
 }
 
@@ -85,6 +95,13 @@ func NewController(ctx context.Context, mgr ctrlmanager.Manager, opts ...Options
 	}
 
 	return c, nil
+}
+
+type LogEvent struct {
+	Pod       *corev1.Pod
+	Container *corev1.Container
+	Timestamp *time.Time
+	Message   string
 }
 
 func (c *Controller) Reconcile(req ctrlreconcile.Request) (result ctrlreconcile.Result, err error) {
@@ -146,7 +163,38 @@ func (c *Controller) Reconcile(req ctrlreconcile.Request) (result ctrlreconcile.
 							return
 						}
 						line := *(*string)(unsafe.Pointer(&l))
-						fmt.Fprintf(c.ioStreams.Out, "%s %s %s\n", pod.Name, container.Name, line)
+
+						if len(line) > 0 && line[len(line)-1] == '\n' {
+							line = line[0 : len(line)-1]
+						}
+						for len(line) > 0 && line[len(line)-1] == '\r' {
+							line = line[0 : len(line)-1]
+						}
+
+						parts := strings.SplitN(line, " ", 2)
+						if len(parts) < 2 {
+							// TODO: Warn
+							return
+						}
+
+						timeString, message := parts[0], parts[1]
+						timestamp, err := time.Parse(time.RFC3339Nano, timeString)
+						if err != nil {
+							c.Log.Error(err, "failed to parse timestamp", "timeString", timeString)
+							return
+						}
+
+						event := LogEvent{
+							Pod:       &pod,
+							Container: &container,
+							Timestamp: &timestamp,
+							Message:   html.UnescapeString(message),
+						}
+						if err := c.tmpl.ExecuteTemplate(c.ioStreams.Out, "line", event); err != nil {
+							c.Log.Error(err, "failed to tmpl.Execute", "line", line)
+							return
+						}
+						// fmt.Fprintf(c.ioStreams.Out, "%s %s %s\n", pod.Name, container.Name, line)
 					}
 				case <-c.ctx.Done():
 					stream.Close()
