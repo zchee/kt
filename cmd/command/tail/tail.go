@@ -11,7 +11,7 @@ import (
 	"github.com/spf13/cobra"
 	errors "golang.org/x/xerrors"
 
-	cmdoptions "github.com/zchee/kt/pkg/command/options"
+	"github.com/zchee/kt/pkg/cmdoptions"
 	"github.com/zchee/kt/pkg/controller"
 	"github.com/zchee/kt/pkg/kubeconfig"
 	"github.com/zchee/kt/pkg/manager"

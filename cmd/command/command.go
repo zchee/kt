@@ -13,9 +13,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/zchee/kt/pkg/command/completion"
-	cmdoptions "github.com/zchee/kt/pkg/command/options"
-	"github.com/zchee/kt/pkg/command/tail"
+	"github.com/zchee/kt/cmd/command/completion"
+	"github.com/zchee/kt/cmd/command/tail"
+	"github.com/zchee/kt/pkg/cmdoptions"
 )
 
 const (

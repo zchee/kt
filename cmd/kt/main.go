@@ -8,10 +8,10 @@ import (
 	"context"
 	"os"
 
-	// Initialize all known client auth plugins.
+	// initialize all known client auth plugins
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
-	"github.com/zchee/kt/pkg/command"
+	"github.com/zchee/kt/cmd/command"
 	"github.com/zchee/kt/pkg/signalcontext"
 )
 
