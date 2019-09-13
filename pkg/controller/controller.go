@@ -33,8 +33,6 @@ import (
 	"github.com/zchee/kt/pkg/cmdoptions"
 )
 
-var _ metav1.APIGroup
-
 type Controller struct {
 	ctrlclient.Client
 	Manager ctrlmanager.Manager
