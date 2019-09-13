@@ -5,13 +5,20 @@
 package controller
 
 import (
+	"bufio"
 	"context"
+	"fmt"
+	"io"
+	"net/http"
+	"unsafe"
 
 	"github.com/go-logr/logr"
 	"go.uber.org/zap"
 
 	corev1 "k8s.io/api/core/v1"
-	toolscache "k8s.io/client-go/tools/cache"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 	ctrlbuilder "sigs.k8s.io/controller-runtime/pkg/builder"
 	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
 	ctrlcontroller "sigs.k8s.io/controller-runtime/pkg/controller"
@@ -19,21 +26,41 @@ import (
 	ctrlzap "sigs.k8s.io/controller-runtime/pkg/log/zap"
 	ctrlmanager "sigs.k8s.io/controller-runtime/pkg/manager"
 	ctrlreconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
+
+	"github.com/zchee/kt/pkg/cmdoptions"
 )
+
+var _ metav1.APIGroup
 
 type Controller struct {
 	ctrlclient.Client
 	Manager ctrlmanager.Manager
 	Log     logr.Logger
 
+	clientset   kubernetes.Interface
 	ctx         context.Context
+	ioStreams   cmdoptions.IOStreams
 	concurrency int
 }
 
 var _ ctrlreconcile.Reconciler = (*Controller)(nil)
 
+type Options func(*Controller)
+
+func WithConcurrency(concurrency int) Options {
+	return func(c *Controller) {
+		c.concurrency = concurrency
+	}
+}
+
+func WithIOStearms(ioStearms cmdoptions.IOStreams) Options {
+	return func(c *Controller) {
+		c.ioStreams = ioStearms
+	}
+}
+
 // New returns a new Controller registered with the Manager.
-func NewController(ctx context.Context, mgr ctrlmanager.Manager, concurrency int) (*Controller, error) {
+func NewController(ctx context.Context, mgr ctrlmanager.Manager, opts ...Options) (*Controller, error) {
 	lvl := zap.NewAtomicLevelAt(zap.DebugLevel)
 	logger := ctrlzap.New(func(o *ctrlzap.Options) {
 		o.Level = &lvl
@@ -46,17 +73,22 @@ func NewController(ctx context.Context, mgr ctrlmanager.Manager, concurrency int
 		Manager:     mgr,
 		Log:         logger.WithName("controller"),
 		ctx:         ctx,
-		concurrency: concurrency,
+		concurrency: 1, // default is 1
 	}
+	for _, opt := range opts {
+		opt(c)
+	}
+
 	if err := c.SetupWithManager(mgr); err != nil {
 		c.Log.Error(err, "failed to create controller")
+		return nil, err
 	}
 
 	return c, nil
 }
 
 func (c *Controller) Reconcile(req ctrlreconcile.Request) (result ctrlreconcile.Result, err error) {
-	log := c.Log.WithValues("controller", "Reconcile")
+	log := c.Log.WithName("Reconcile")
 
 	var pod corev1.Pod
 	if err := c.Get(c.ctx, req.NamespacedName, &pod); err != nil {
@@ -67,18 +99,62 @@ func (c *Controller) Reconcile(req ctrlreconcile.Request) (result ctrlreconcile.
 		return result, nil
 	}
 
-	cache := c.Manager.GetCache()
-	informer, err := cache.GetInformer(&pod)
-	// informer, err := cache.GetInformerForKind(pod.GroupVersionKind())
+	c.clientset, err = kubernetes.NewForConfig(c.Manager.GetConfig())
 	if err != nil {
-		log.Error(err, "failed to get informer")
+		log.Error(err, "failed to new clientset")
 		return result, err
 	}
-	informer.AddEventHandler(toolscache.ResourceEventHandlerFuncs{
-		AddFunc:    func(obj interface{}) { log.Info("AddFunc", "obj", obj) },
-		UpdateFunc: func(oldObj, newObj interface{}) { log.Info("UpdateFunc", "oldObj", oldObj, "newObj", newObj) },
-		DeleteFunc: func(obj interface{}) { log.Info("DeleteFunc", "obj", obj) },
-	})
+
+	now := metav1.Now()
+	logOpts := corev1.PodLogOptions{
+		Follow:     true,
+		Timestamps: true,
+		SinceTime:  &now,
+	}
+
+	for i := range pod.Spec.Containers {
+		container := pod.Spec.Containers[i]
+		logOpts.Container = container.Name
+
+		stream, err := c.clientset.CoreV1().Pods(pod.Namespace).GetLogs(pod.Name, &logOpts).Stream()
+		if err != nil {
+			if errStatus, ok := err.(apierrors.APIStatus); ok {
+				switch errStatus.Status().Code {
+				case http.StatusBadRequest:
+					return result, err
+				case http.StatusNotFound:
+					return result, err
+				default:
+					return result, err
+				}
+			}
+			return result, nil
+		}
+
+		go func(container corev1.Container, logOpts corev1.PodLogOptions) {
+			for {
+				select {
+				default:
+					r := bufio.NewReader(stream)
+					for {
+						l, err := r.ReadBytes('\n')
+						if err != nil {
+							if err == io.EOF {
+								stream.Close()
+								break
+							}
+							return
+						}
+						line := *(*string)(unsafe.Pointer(&l))
+						fmt.Fprintf(c.ioStreams.Out, "%s %s %s\n", pod.Name, container.Name, line)
+					}
+				case <-c.ctx.Done():
+					stream.Close()
+					return
+				}
+			}
+		}(container, logOpts)
+	}
 
 	log.Info("end of Reconcile")
 	return result, nil
@@ -89,5 +165,6 @@ func (c *Controller) SetupWithManager(mgr ctrlmanager.Manager) error {
 		Reconciler:              c,
 		MaxConcurrentReconciles: c.concurrency,
 	}
+
 	return ctrlbuilder.ControllerManagedBy(mgr).For(&corev1.Pod{}).WithOptions(ctrlOpts).Complete(c)
 }
