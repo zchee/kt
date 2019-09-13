@@ -24,7 +24,7 @@ const (
 type Tail struct {
 	ctrl        *controller.Controller
 	mgr         *manager.Manager
-	kubeconfig  string
+	kc          string
 	concurrency int
 }
 
@@ -37,11 +37,11 @@ func NewCmdTail(ctx context.Context, ioStreams cmdoptions.IOStreams) *cobra.Comm
 	}
 
 	f := cmd.Flags()
-	f.StringVar(&t.kubeconfig, "kubeconfig", os.Getenv("KUBECONFIG"), "path to a kubeconfig.")
+	f.StringVar(&t.kc, "kubeconfig", os.Getenv("KUBECONFIG"), "path to a kubeconfig.")
 	f.IntVarP(&t.concurrency, "concurrency", "c", 1, "max concurrent reconciler.")
 
 	cmd.PreRunE = func(*cobra.Command, []string) error {
-		config, err := kubeconfig.RestConfig(t.kubeconfig)
+		config, err := kubeconfig.RestConfig(t.kc)
 		if err != nil {
 			return errors.Errorf("unable create rest config: %w", err)
 		}
@@ -53,7 +53,7 @@ func NewCmdTail(ctx context.Context, ioStreams cmdoptions.IOStreams) *cobra.Comm
 			return errors.Errorf("unable create manager: %w", err)
 		}
 
-		t.ctrl, err = controller.NewController(ctx, t.mgr, t.concurrency)
+		t.ctrl, err = controller.NewController(ctx, t.mgr, controller.WithIOStearms(ioStreams), controller.WithConcurrency(t.concurrency))
 		if err != nil {
 			return errors.Errorf("unable create controller: %w", err)
 		}
