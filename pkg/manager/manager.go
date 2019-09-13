@@ -24,11 +24,13 @@ type Manager struct {
 	ctrlmanager.Manager
 }
 
+type Options = ctrlmanager.Options
+
 // NewManager returns a new Manager for creating Controllers.
-func NewManager(config *rest.Config) (*Manager, error) {
+func NewManager(config *rest.Config, mgrOpts ctrlmanager.Options) (*Manager, error) {
 	kubescheme.AddToScheme(scheme)
 
-	lvl := zap.NewAtomicLevelAt(zap.DebugLevel)
+	lvl := zap.NewAtomicLevelAt(zap.InfoLevel)
 	logger := ctrlzap.New(func(o *ctrlzap.Options) {
 		o.Level = &lvl
 		o.Development = true
@@ -37,10 +39,8 @@ func NewManager(config *rest.Config) (*Manager, error) {
 
 	managerLog := logger.WithName("manager")
 
-	mgrOpts := ctrlmanager.Options{
-		Scheme:             scheme,
-		MetricsBindAddress: "0",
-	}
+	mgrOpts.Scheme = scheme
+	mgrOpts.MetricsBindAddress = "0"
 
 	mgr, err := ctrlmanager.New(config, mgrOpts)
 	if err != nil {
