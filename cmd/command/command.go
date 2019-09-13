@@ -22,6 +22,9 @@ const (
 	usageShort = "kt tails the Kubernetes logs for a container in a pod or specified resource."
 	usageLong  = `
 kt tails the Kubernetes logs for a container in a pod or specified resource.`
+
+	versionTempl = `{{with .Name}}{{printf "%s " .}}{{end}}{{printf "version: %s " .Version}}
+`
 )
 
 // NewCommand creates the `kt` command with arguments.
@@ -30,33 +33,35 @@ func NewCommand(ctx context.Context) *cobra.Command {
 }
 
 // NewKTCommand creates the `kt` command and its nested children.
-func NewKTCommand(ctx context.Context, in io.Reader, out, err io.Writer) *cobra.Command {
+func NewKTCommand(ctx context.Context, in io.Reader, out, errOut io.Writer) *cobra.Command {
 	// Parent command to which all subcommands are added.
 	cmds := &cobra.Command{
-		Use:   "kt",
-		Short: usageShort,
-		Long:  usageLong,
-		Run: func(cmd *cobra.Command, args []string) {
-			cmd.Help()
-		},
-		// Hook before and after Run initialize and write profiles to disk,
-		// respectively.
-		PersistentPreRunE: func(*cobra.Command, []string) error {
-			return initProfiling()
-		},
-		PersistentPostRunE: func(*cobra.Command, []string) error {
-			return flushProfiling()
-		},
+		Use:           "kt",
+		Short:         usageShort,
+		Long:          usageLong,
+		Version:       Version(),
+		SilenceErrors: true,
+		// Hook before and after Run initialize and write profiles to disk, respectively
+		PersistentPreRunE:  func(*cobra.Command, []string) error { return initProfiling() },
+		PersistentPostRunE: func(*cobra.Command, []string) error { return flushProfiling() },
 	}
+	cmds.SetVersionTemplate(versionTempl)
+
+	cmds.Flags().BoolP("version", "v", false, "Show "+cmds.Name()+" version.") // version flag is root only
 
 	flags := cmds.PersistentFlags()
 	addProfilingFlags(flags)
-	cmds.PersistentFlags().AddGoFlagSet(flag.CommandLine)
+	flags.AddGoFlagSet(flag.CommandLine)
 
-	ioStreams := cmdoptions.IOStreams{In: in, Out: out, ErrOut: err}
+	ioStreams := cmdoptions.IOStreams{In: in, Out: out, ErrOut: errOut}
 
-	cmds.AddCommand(tail.NewCmdTail(ctx, ioStreams))
+	cmdTail := tail.NewCmdTail(ctx, ioStreams)
+	cmds.AddCommand(cmdTail)
 	cmds.AddCommand(completion.NewCmdCompletion(ctx, ioStreams.Out, ""))
+
+	cmds.RunE = func(cmd *cobra.Command, args []string) error {
+		return cmdTail.RunE(cmd, args)
+	}
 
 	return cmds
 }
