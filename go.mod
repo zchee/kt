@@ -6,6 +6,7 @@ require (
 	cloud.google.com/go v0.45.1 // indirect
 	github.com/cenkalti/backoff v1.1.1-0.20190506075156-2146c9339422
 	github.com/cespare/xxhash/v2 v2.1.0
+	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc
 	github.com/go-logr/logr v0.1.1-0.20190903151443-a1ebd699b195
 	github.com/gogo/protobuf v1.3.0 // indirect
 	github.com/google/go-cmp v0.3.2-0.20190829225427-b1c9c4891a65
