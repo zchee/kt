@@ -9,6 +9,7 @@ go 1.13
 require (
 	cloud.google.com/go v0.45.1 // indirect
 	github.com/Azure/go-autorest v0.0.0-00010101000000-000000000000 // indirect
+	github.com/cespare/xxhash/v2 v2.1.0
 	github.com/dgrijalva/jwt-go v0.0.0-00010101000000-000000000000 // indirect
 	github.com/go-logr/logr v0.1.1-0.20190903151443-a1ebd699b195
 	github.com/google/go-cmp v0.3.2-0.20190829225427-b1c9c4891a65
