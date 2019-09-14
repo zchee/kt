@@ -126,7 +126,7 @@ func (c *Controller) Reconcile(req ctrlreconcile.Request) (result ctrlreconcile.
 		return result, nil
 	}
 
-	logOpts := corev1.PodLogOptions{
+	logOpts := &corev1.PodLogOptions{
 		Follow:     true,
 		Timestamps: c.opts.Timestamps,
 	}
@@ -144,7 +144,7 @@ func (c *Controller) Reconcile(req ctrlreconcile.Request) (result ctrlreconcile.
 	for i := range pod.Spec.Containers {
 		container := pod.Spec.Containers[i]
 		podLogOpts := new(corev1.PodLogOptions)
-		podLogOpts = &logOpts // shallow copy
+		*podLogOpts = *logOpts // shallow copy
 		podLogOpts.Container = container.Name
 
 		stream, err := c.Clientset.CoreV1().Pods(pod.Namespace).GetLogs(pod.Name, podLogOpts).Stream()
@@ -169,7 +169,7 @@ func (c *Controller) Reconcile(req ctrlreconcile.Request) (result ctrlreconcile.
 				if err != nil {
 					if errors.Is(err, io.EOF) {
 						stream.Close()
-						break
+						return
 					}
 					c.Log.Error(err, "failed to ReadBytes")
 					return
