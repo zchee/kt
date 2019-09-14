@@ -133,7 +133,7 @@ func (c *Controller) Reconcile(req ctrlreconcile.Request) (result ctrlreconcile.
 	if c.opts.Lines > 0 {
 		logOpts.TailLines = &c.opts.Lines
 	}
-	if c.opts.Timestamps {
+	if c.opts.Since > 0 {
 		sec := int64(c.opts.Since.Seconds())
 		logOpts.SinceSeconds = &sec
 	}
