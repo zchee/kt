@@ -21,7 +21,6 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	ctrlbuilder "sigs.k8s.io/controller-runtime/pkg/builder"
 	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -128,14 +127,11 @@ func (c *Controller) Reconcile(req ctrlreconcile.Request) (result ctrlreconcile.
 	}
 
 	logOpts := corev1.PodLogOptions{
-		Follow: true,
+		Follow:     true,
+		Timestamps: c.opts.Timestamps,
 	}
-	if c.opts.Timestamps {
-		now := metav1.Time{
-			Time: time.Now().Add(-c.opts.Since),
-		}
-		logOpts.Timestamps = c.opts.Timestamps
-		logOpts.SinceTime = &now
+	if c.opts.Lines > 0 {
+		logOpts.TailLines = &c.opts.Lines
 	}
 
 	podColor, containerColor := findColors(pod.Name)
