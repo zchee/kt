@@ -7,7 +7,6 @@ package controller
 import (
 	"bufio"
 	"context"
-	iopkg "io"
 	"net/http"
 	"strings"
 	"sync"
@@ -18,6 +17,7 @@ import (
 	"github.com/go-logr/logr"
 	color "github.com/zchee/color/v2"
 	"go.uber.org/zap"
+	errors "golang.org/x/xerrors"
 
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -49,8 +49,6 @@ type Controller struct {
 }
 
 var _ ctrlreconcile.Reconciler = (*Controller)(nil)
-
-var errEOF = iopkg.EOF
 
 // New returns a new Controller registered with the Manager.
 func New(ctx context.Context, ioStreams io.Streams, mgr ctrlmanager.Manager, opts *options.Options) (*Controller, error) {
@@ -167,7 +165,7 @@ func (c *Controller) Reconcile(req ctrlreconcile.Request) (result ctrlreconcile.
 			for {
 				l, err := r.ReadBytes('\n')
 				if err != nil {
-					if err == errEOF {
+					if errors.Is(err, io.EOF) {
 						stream.Close()
 						break
 					}
