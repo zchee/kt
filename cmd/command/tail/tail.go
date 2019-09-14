@@ -6,19 +6,25 @@ package tail
 
 import (
 	"context"
+	"encoding/json"
 	"os"
+	"regexp"
 	"text/template"
 	"time"
 
 	"github.com/spf13/cobra"
+	color "github.com/zchee/color/v2"
 	errors "golang.org/x/xerrors"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 
-	"github.com/zchee/kt/pkg/cmdoptions"
+	"github.com/zchee/kt/internal/unsafes"
 	"github.com/zchee/kt/pkg/controller"
+	"github.com/zchee/kt/pkg/io"
 	"github.com/zchee/kt/pkg/manager"
+	"github.com/zchee/kt/pkg/options"
 )
 
 const (
@@ -30,103 +36,88 @@ type Tail struct {
 	mgr  *manager.Manager
 }
 
-type Options struct {
-	// kubeconfig and context
-	kubeConfig  string
-	kubeContext string
-
-	// global filters
-	exclude []string
-	include []string
-
-	// pod filters
-	container        string
-	containerState   string
-	excludeContainer string
-	namespace        string
-	allNamespaces    bool
-	selector         string
-	timestamps       bool
-	since            time.Duration
-	concurrency      int
-
-	// misc options
-	lines      int64
-	color      string
-	tmplString string
-	output     string
-	help       bool
-}
-
-func NewCmdTail(ctx context.Context, ioStreams cmdoptions.IOStreams) *cobra.Command {
+func NewCmdTail(ctx context.Context, ioStreams io.Streams) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "tail pod-query [flags]",
 		Short: tailShort,
 	}
 
-	opts := &Options{
-		container:      ".*",
-		containerState: "running",
-		since:          48 * time.Hour,
-		concurrency:    1,
-		lines:          -1,
-		color:          "auto",
-		tmplString:     "",
-		output:         "default",
+	opts := &options.Options{
+		Container:      ".*",
+		ContainerState: "running",
+		Since:          48 * time.Hour,
+		Concurrency:    1,
+		Lines:          -1,
+		UseColor:       "auto",
+		Format:         "",
+		Output:         "default",
 	}
 
 	f := cmd.Flags()
-	f.BoolVarP(&opts.help, "help", "h", opts.help, "Show help")
+	f.BoolVarP(&opts.Help, "help", "h", opts.Help, "Show help")
 
 	// kubeconfig and context
-	f.StringVar(&opts.kubeConfig, "kubeconfig", opts.kubeConfig, "Path to kubeconfig file to use")
-	f.StringVar(&opts.kubeContext, "context", opts.kubeContext, "Kubernetes context to use. Default to current context configured in kubeconfig.")
+	f.StringVar(&opts.KubeConfig, "kubeconfig", opts.KubeConfig, "Path to kubeconfig file to use")
+	f.StringVar(&opts.KubeContext, "context", opts.KubeContext, "Kubernetes context to use. Default to current context configured in kubeconfig.")
 
 	// global filters
-	f.StringSliceVarP(&opts.exclude, "exclude", "e", opts.exclude, "Regex of log lines to exclude")
-	f.StringSliceVarP(&opts.include, "include", "i", opts.include, "Regex of log lines to include")
+	f.StringSliceVarP(&opts.Exclude, "exclude", "e", opts.Exclude, "Regex of log lines to exclude")
+	f.StringSliceVarP(&opts.Include, "include", "i", opts.Include, "Regex of log lines to include")
 
 	// pod filters
-	f.StringVarP(&opts.container, "container", "c", opts.container, "Container name when multiple containers in pod")
-	f.StringVar(&opts.containerState, "container-state", opts.containerState, "If present, tail containers with status in running, waiting or terminated. Default to running.")
-	f.StringVarP(&opts.excludeContainer, "exclude-container", "E", opts.excludeContainer, "Exclude a Container name")
-	f.StringVarP(&opts.namespace, "namespace", "n", opts.namespace, "Kubernetes namespace to use. Default to namespace configured in Kubernetes context")
-	f.BoolVar(&opts.allNamespaces, "all-namespaces", opts.allNamespaces, "If present, tail across all namespaces. A specific namespace is ignored even if specified with --namespace.")
-	f.StringVarP(&opts.selector, "selector", "l", opts.selector, "Selector (label query) to filter on. If present, default to \".*\" for the pod-query.")
-	f.BoolVarP(&opts.timestamps, "timestamps", "t", opts.timestamps, "Print timestamps")
-	f.DurationVarP(&opts.since, "since", "s", opts.since, "Return logs newer than a relative duration like 5s, 2m, or 3h.")
-	f.IntVar(&opts.concurrency, "concurrency", opts.concurrency, "max concurrent reconciler.")
+	f.StringVarP(&opts.Container, "container", "c", opts.Container, "Container name when multiple containers in pod")
+	f.StringVar(&opts.ContainerState, "container-state", opts.ContainerState, "If present, tail containers with status in running, waiting or terminated. Default to running.")
+	f.StringVarP(&opts.ExcludeContainer, "exclude-container", "E", opts.ExcludeContainer, "Exclude a Container name")
+	f.StringVarP(&opts.Namespace, "namespace", "n", opts.Namespace, "Kubernetes namespace to use. Default to namespace configured in Kubernetes context")
+	f.BoolVar(&opts.AllNamespaces, "all-namespaces", opts.AllNamespaces, "If present, tail across all namespaces. A specific namespace is ignored even if specified with --namespace.")
+	f.StringVarP(&opts.Selector, "selector", "l", opts.Selector, "Selector (label query) to filter on. If present, default to \".*\" for the pod-query.")
+	f.BoolVarP(&opts.Timestamps, "timestamps", "t", opts.Timestamps, "Print timestamps")
+	f.DurationVarP(&opts.Since, "since", "s", opts.Since, "Return logs newer than a relative duration like 5s, 2m, or 3h.")
+	f.IntVar(&opts.Concurrency, "concurrency", opts.Concurrency, "max concurrent reconciler.")
 
 	// misc options
-	f.Int64Var(&opts.lines, "tail", opts.lines, "The number of lines from the end of the logs to show. Defaults to -1, showing all logs.")
-	f.StringVar(&opts.color, "color", opts.color, "Color output. Can be 'always', 'never', or 'auto'")
-	f.StringVar(&opts.tmplString, "template", opts.tmplString, "Template to use for log lines, leave empty to use --output flag")
-	f.StringVarP(&opts.output, "output", "o", opts.output, "Specify predefined template. Currently support: [default, raw, json]")
+	f.Int64Var(&opts.Lines, "tail", opts.Lines, "The number of lines from the end of the logs to show. Defaults to -1, showing all logs.")
+	f.StringVar(&opts.UseColor, "color", opts.UseColor, "Color output. Can be 'always', 'never', or 'auto'")
+	f.StringVarP(&opts.Format, "format", "f", opts.Format, "Template to use for log lines, leave empty to use --output flag")
+	f.StringVarP(&opts.Output, "output", "o", opts.Output, "Specify predefined template. Currently support: [default, raw, json]")
 
 	cmd.PreRunE = func(*cobra.Command, []string) error {
-		if opts.help {
+		if opts.Help {
 			return cmd.Usage()
 		}
-
 		return nil
 	}
 
-	cmd.RunE = func(*cobra.Command, []string) error {
-		t := &Tail{}
+	cmd.RunE = func(_ *cobra.Command, args []string) error {
+		podQuery := ".*"
+		if len(args) == 1 {
+			podQuery = args[0]
+		}
+		pQuery, err := regexp.Compile(podQuery)
+		if err != nil {
+			return errors.Errorf("failed to compile regular expression from query: %w", err)
+		}
+		opts.PodQuery = pQuery
 
-		if opts.kubeConfig == "" {
-			opts.kubeConfig = os.Getenv("KUBECONFIG")
-			if opts.kubeConfig == "" {
-				opts.kubeConfig = clientcmd.RecommendedHomeFile
+		cQuery, err := regexp.Compile(opts.Container)
+		if err != nil {
+			return errors.Errorf("failed to compile regular expression for container query: %w", err)
+		}
+		opts.ContainerQuery = cQuery
+
+		if opts.KubeConfig == "" {
+			opts.KubeConfig = os.Getenv("KUBECONFIG")
+			if opts.KubeConfig == "" {
+				opts.KubeConfig = clientcmd.RecommendedHomeFile
 			}
 		}
 
 		clientConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
 			&clientcmd.ClientConfigLoadingRules{
-				ExplicitPath: opts.kubeConfig,
+				ExplicitPath: opts.KubeConfig,
 			},
 			&clientcmd.ConfigOverrides{
-				CurrentContext: opts.kubeContext,
+				CurrentContext: opts.KubeContext,
 			},
 		)
 
@@ -137,14 +128,12 @@ func NewCmdTail(ctx context.Context, ioStreams cmdoptions.IOStreams) *cobra.Comm
 		// TODO(zchee): inject OpenCensus RoundTripper
 		// config.Transport = trace.Transport()
 
-		mgrOpts := manager.Options{
-			Namespace: metav1.NamespaceAll,
-		}
+		var mgrOpts manager.Options
 		switch {
-		case opts.allNamespaces:
-			// already set
-		case opts.namespace != "":
-			mgrOpts.Namespace = opts.namespace
+		case opts.AllNamespaces:
+			mgrOpts.Namespace = metav1.NamespaceAll
+		case opts.Namespace != "":
+			mgrOpts.Namespace = opts.Namespace
 		default:
 			rawConfig, err := clientConfig.RawConfig()
 			if err != nil {
@@ -155,48 +144,72 @@ func NewCmdTail(ctx context.Context, ioStreams cmdoptions.IOStreams) *cobra.Comm
 			}
 		}
 
-		if opts.tmplString == "" {
-			if opts.output == "raw" {
-				opts.tmplString = `{{.Message}}`
-			} else {
-				opts.tmplString = `{{.Pod.Name}} {{.Container.Name}} {{.Message}}`
-				if opts.allNamespaces {
-					opts.tmplString = `{{.Pod.Namespace}}/` + opts.tmplString
-				}
-			}
-			if opts.timestamps {
-				opts.tmplString = `{{.Timestamp}} ` + opts.tmplString
-			}
-		}
-		opts.tmplString += "\n"
-
-		tmpl, err := template.New("line").Parse(opts.tmplString)
-		if err != nil {
-			return errors.Errorf("invalid template: %w", err)
-		}
-
-		t.mgr, err = manager.NewManager(config, mgrOpts)
+		t := &Tail{}
+		t.mgr, err = manager.New(config, mgrOpts)
 		if err != nil {
 			return errors.Errorf("unable create manager: %w", err)
 		}
-		ctrlOpts := []controller.Options{
-			controller.WithIOStearms(ioStreams),
-			controller.WithTemplate(tmpl),
-		}
-		if opts.concurrency > 1 {
-			ctrlOpts = append(ctrlOpts, controller.WithConcurrency(opts.concurrency))
-		}
-		t.ctrl, err = controller.NewController(ctx, t.mgr, ctrlOpts...)
-		if err != nil {
-			return errors.Errorf("unable create controller: %w", err)
+
+		switch opts.UseColor {
+		case "auto":
+			// nothig to do
+		case "always":
+			color.NoColor = false
+		case "never":
+			color.NoColor = true
+		default:
+			return errors.New("color flag should be one of 'always', 'never', or 'auto'")
 		}
 
-		return t.RunTail(ctx, ioStreams)
+		if format := opts.Format; format == "" {
+			switch opts.Output {
+			case "default":
+				if color.NoColor {
+					format = "{{.PodName}} {{.ContainerName}} {{.Message}}\n"
+					if opts.AllNamespaces {
+						format = "{{.Namespace}} " + format
+					}
+				} else {
+					format = "{{color .PodColor .PodName}} {{color .ContainerColor .ContainerName}} {{.Message}}\n"
+					if opts.AllNamespaces {
+						format = "{{color .PodColor .Namespace}} " + format
+					}
+
+				}
+			case "raw":
+				format = "{{.Message}}"
+			case "json":
+				format = "{{json .}}\n"
+			}
+
+			opts.Format = format
+		}
+		tmplFuncs := map[string]interface{}{
+			"json": func(in interface{}) (string, error) {
+				b, err := json.Marshal(in)
+				if err != nil {
+					return "", err
+				}
+				return unsafes.String(b), nil
+			},
+			"color": func(c color.Color, text string) string {
+				return c.SprintFunc()(text)
+			},
+		}
+		opts.Template = template.Must(template.New("log").Funcs(tmplFuncs).Parse(opts.Format))
+
+		t.ctrl, err = controller.New(ctx, ioStreams, t.mgr, opts)
+		t.ctrl.Clientset, err = kubernetes.NewForConfig(t.mgr.GetConfig())
+		if err != nil {
+			return errors.Errorf("failed to new clientset: %w", err)
+		}
+
+		return t.RunTail(ctx)
 	}
 
 	return cmd
 }
 
-func (t *Tail) RunTail(ctx context.Context, ioStreams cmdoptions.IOStreams) error {
+func (t *Tail) RunTail(ctx context.Context) error {
 	return t.mgr.Start(ctx.Done())
 }
