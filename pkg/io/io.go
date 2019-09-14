@@ -22,6 +22,9 @@ import (
 	"io/ioutil"
 )
 
+// EOF is the error returned by Read when no more input is available.
+var EOF = io.EOF
+
 // IOStreams provides the standard names for iostreams.  This is useful for embedding and for unit testing.
 // Inconsistent and different names make it hard to read and review code
 type Streams struct {
