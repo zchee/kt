@@ -76,31 +76,6 @@ func New(ctx context.Context, ioStreams io.Streams, mgr ctrlmanager.Manager, opt
 	return c, nil
 }
 
-}
-
-
-
-// LogEvent represents a Pod log event.
-type LogEvent struct {
-	// Message is the log message itself
-	Message string `json:"message"`
-
-	// PodName of the pod
-	PodName string `json:"podName"`
-
-	// ContainerName of the container
-	ContainerName string `json:"containerName"`
-
-	// Namespace of the pod
-	Namespace string `json:"namespace"`
-
-	// Timestamp of the pod
-	Timestamp *time.Time `json:"timestamp,omitempty"`
-
-	PodColor       *color.Color `json:"-"`
-	ContainerColor *color.Color `json:"-"`
-}
-
 // Reconcile implements a ctrlreconcile.Reconciler.
 func (c *Controller) Reconcile(req ctrlreconcile.Request) (result ctrlreconcile.Result, err error) {
 	log := c.Log.WithName("Reconcile")
