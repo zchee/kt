@@ -47,7 +47,6 @@ func NewCmdTail(ctx context.Context, ioStreams io.Streams) *cobra.Command {
 		ContainerState: "running",
 		Since:          48 * time.Hour,
 		Concurrency:    1,
-		Lines:          -1,
 		UseColor:       "auto",
 		Format:         "",
 		Output:         "default",
@@ -181,9 +180,9 @@ func NewCmdTail(ctx context.Context, ioStreams io.Streams) *cobra.Command {
 			case "json":
 				format = "{{json .}}\n"
 			}
-
 			opts.Format = format
 		}
+
 		tmplFuncs := map[string]interface{}{
 			"json": func(in interface{}) (string, error) {
 				b, err := json.Marshal(in)
