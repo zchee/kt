@@ -7,15 +7,15 @@ package controller
 import (
 	"bufio"
 	"context"
-	"html"
-	"io"
+	iopkg "io"
 	"net/http"
 	"strings"
-	"text/template"
 	"time"
-	"unsafe"
 
+	"github.com/cenkalti/backoff"
+	xxhash "github.com/cespare/xxhash/v2"
 	"github.com/go-logr/logr"
+	color "github.com/zchee/color/v2"
 	"go.uber.org/zap"
 
 	corev1 "k8s.io/api/core/v1"
@@ -30,61 +30,43 @@ import (
 	ctrlmanager "sigs.k8s.io/controller-runtime/pkg/manager"
 	ctrlreconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	"github.com/zchee/kt/pkg/cmdoptions"
+	"github.com/zchee/kt/internal/unsafes"
+	"github.com/zchee/kt/pkg/io"
+	"github.com/zchee/kt/pkg/options"
 )
 
 type Controller struct {
 	ctrlclient.Client
-	Manager ctrlmanager.Manager
-	Log     logr.Logger
+	Manager   ctrlmanager.Manager
+	Log       logr.Logger
+	Clientset kubernetes.Interface
 
-	clientset   kubernetes.Interface
-	ctx         context.Context
-	ioStreams   cmdoptions.IOStreams
-	concurrency int
-	tmpl        *template.Template
+	ctx       context.Context
+	ioStreams io.Streams
+	opts      *options.Options
 }
 
 var _ ctrlreconcile.Reconciler = (*Controller)(nil)
 
-type Options func(*Controller)
-
-func WithConcurrency(concurrency int) Options {
-	return func(c *Controller) {
-		c.concurrency = concurrency
-	}
-}
-
-func WithIOStearms(ioStearms cmdoptions.IOStreams) Options {
-	return func(c *Controller) {
-		c.ioStreams = ioStearms
-	}
-}
-
-func WithTemplate(tmpl *template.Template) Options {
-	return func(c *Controller) {
-		c.tmpl = tmpl
-	}
-}
+var errEOF = iopkg.EOF
 
 // New returns a new Controller registered with the Manager.
-func NewController(ctx context.Context, mgr ctrlmanager.Manager, opts ...Options) (*Controller, error) {
+func New(ctx context.Context, ioStreams io.Streams, mgr ctrlmanager.Manager, opts *options.Options) (*Controller, error) {
 	lvl := zap.NewAtomicLevelAt(zap.DebugLevel)
 	logger := ctrlzap.New(func(o *ctrlzap.Options) {
 		o.Level = &lvl
 		o.Development = true
+		o.DestWritter = ioStreams.ErrOut
 	})
 	ctrllog.SetLogger(logger)
 
 	c := &Controller{
-		Client:      mgr.GetClient(),
-		Manager:     mgr,
-		Log:         logger.WithName("controller"),
-		ctx:         ctx,
-		concurrency: 1, // default is 1
-	}
-	for _, opt := range opts {
-		opt(c)
+		Client:    mgr.GetClient(),
+		Manager:   mgr,
+		Log:       logger.WithName("controller"),
+		ctx:       ctx,
+		ioStreams: ioStreams,
+		opts:      opts,
 	}
 
 	if err := c.SetupWithManager(mgr); err != nil {
@@ -95,11 +77,42 @@ func NewController(ctx context.Context, mgr ctrlmanager.Manager, opts ...Options
 	return c, nil
 }
 
+var colorList = [][2]*color.Color{
+	{color.New(color.FgHiCyan), color.New(color.FgCyan)},
+	{color.New(color.FgHiGreen), color.New(color.FgGreen)},
+	{color.New(color.FgHiMagenta), color.New(color.FgMagenta)},
+	{color.New(color.FgHiYellow), color.New(color.FgYellow)},
+	{color.New(color.FgHiBlue), color.New(color.FgBlue)},
+	{color.New(color.FgHiRed), color.New(color.FgRed)},
+}
+
+func findColors(podName string) (podColor, containerColor *color.Color) {
+	digest := xxhash.New()
+	digest.Write(unsafes.Slice(podName))
+	idx := digest.Sum64() % uint64(len(colorList))
+
+	colors := colorList[idx]
+	return colors[0], colors[1]
+}
+
 type LogEvent struct {
-	Pod       *corev1.Pod
-	Container *corev1.Container
-	Timestamp *time.Time
-	Message   string
+	// Message is the log message itself
+	Message string `json:"message"`
+
+	// PodName of the pod
+	PodName string `json:"podName"`
+
+	// ContainerName of the container
+	ContainerName string `json:"containerName"`
+
+	// Namespace of the pod
+	Namespace string `json:"namespace"`
+
+	// Timestamp of the pod
+	Timestamp *time.Time `json:"timestamp"`
+
+	PodColor       *color.Color `json:"-"`
+	ContainerColor *color.Color `json:"-"`
 }
 
 func (c *Controller) Reconcile(req ctrlreconcile.Request) (result ctrlreconcile.Result, err error) {
@@ -114,92 +127,88 @@ func (c *Controller) Reconcile(req ctrlreconcile.Request) (result ctrlreconcile.
 		return result, nil
 	}
 
-	c.clientset, err = kubernetes.NewForConfig(c.Manager.GetConfig())
-	if err != nil {
-		log.Error(err, "failed to new clientset")
-		return result, err
-	}
-
-	now := metav1.Now()
 	logOpts := corev1.PodLogOptions{
-		Follow:     true,
-		Timestamps: true,
-		SinceTime:  &now,
+		Follow: true,
+	}
+	if c.opts.Timestamps {
+		now := metav1.Time{
+			Time: time.Now().Add(-c.opts.Since),
+		}
+		logOpts.Timestamps = c.opts.Timestamps
+		logOpts.SinceTime = &now
 	}
 
+	podColor, containerColor := findColors(pod.Name)
+
+	boff := backoff.NewExponentialBackOff()
 	for i := range pod.Spec.Containers {
 		container := pod.Spec.Containers[i]
 		logOpts.Container = container.Name
 
-		stream, err := c.clientset.CoreV1().Pods(pod.Namespace).GetLogs(pod.Name, &logOpts).Stream()
+		stream, err := c.Clientset.CoreV1().Pods(pod.Namespace).GetLogs(pod.Name, &logOpts).Stream()
 		if err != nil {
 			if errStatus, ok := err.(apierrors.APIStatus); ok {
 				switch errStatus.Status().Code {
 				case http.StatusBadRequest:
 					return result, err
 				case http.StatusNotFound:
-					return result, err
-				default:
-					return result, err
+					time.Sleep(boff.GetElapsedTime())
+					continue
 				}
 			}
-			return result, nil
+			return result, err
 		}
 
 		go func(container corev1.Container, logOpts corev1.PodLogOptions) {
+			r := bufio.NewReader(stream)
+
 			for {
-				select {
-				default:
-					r := bufio.NewReader(stream)
-					for {
-						l, err := r.ReadBytes('\n')
-						if err != nil {
-							if err == io.EOF {
-								stream.Close()
-								break
-							}
-							return
-						}
-						line := *(*string)(unsafe.Pointer(&l))
-
-						if len(line) > 0 && line[len(line)-1] == '\n' {
-							line = line[0 : len(line)-1]
-						}
-						for len(line) > 0 && line[len(line)-1] == '\r' {
-							line = line[0 : len(line)-1]
-						}
-
-						parts := strings.SplitN(line, " ", 2)
-						if len(parts) < 2 {
-							// TODO: Warn
-							return
-						}
-
-						timeString, message := parts[0], parts[1]
-						timestamp, err := time.Parse(time.RFC3339Nano, timeString)
-						if err != nil {
-							c.Log.Error(err, "failed to parse timestamp", "timeString", timeString)
-							return
-						}
-
-						event := LogEvent{
-							Pod:       &pod,
-							Container: &container,
-							Timestamp: &timestamp,
-							Message:   html.UnescapeString(message),
-						}
-						if err := c.tmpl.ExecuteTemplate(c.ioStreams.Out, "line", event); err != nil {
-							c.Log.Error(err, "failed to tmpl.Execute", "line", line)
-							return
-						}
-						// fmt.Fprintf(c.ioStreams.Out, "%s %s %s\n", pod.Name, container.Name, line)
+				l, err := r.ReadBytes('\n')
+				if err != nil {
+					if err == errEOF {
+						stream.Close()
+						break
 					}
-				case <-c.ctx.Done():
-					stream.Close()
+					c.Log.Error(err, "failed to ReadBytes")
+					return
+				}
+				line := trimSpace(l)
+
+				parts := strings.SplitN(line, " ", 2)
+				if len(parts) < 2 {
+					c.Log.Info("failed to split line", "line", line)
+					continue
+				}
+
+				timeString, message := parts[0], parts[1]
+				event := LogEvent{
+					Message:        message,
+					PodName:        pod.Name,
+					ContainerName:  container.Name,
+					PodColor:       podColor,
+					ContainerColor: containerColor,
+				}
+
+				if c.opts.Timestamps {
+					timestamp, err := time.Parse(time.RFC3339Nano, timeString)
+					if err != nil {
+						c.Log.Error(err, "failed to parse timestamp", "timeString", timeString)
+						return
+					}
+					event.Timestamp = &timestamp
+				}
+
+				if err := c.opts.Template.Execute(c.ioStreams.Out, event); err != nil {
+					c.Log.Error(err, "failed to tmpl.Execute", "event", event)
 					return
 				}
 			}
 		}(container, logOpts)
+
+		go func() {
+			<-c.ctx.Done()
+			stream.Close()
+		}()
 	}
 
 	log.Info("end of Reconcile")
@@ -209,8 +218,20 @@ func (c *Controller) Reconcile(req ctrlreconcile.Request) (result ctrlreconcile.
 func (c *Controller) SetupWithManager(mgr ctrlmanager.Manager) error {
 	ctrlOpts := ctrlcontroller.Options{
 		Reconciler:              c,
-		MaxConcurrentReconciles: c.concurrency,
+		MaxConcurrentReconciles: c.opts.Concurrency,
 	}
 
 	return ctrlbuilder.ControllerManagedBy(mgr).For(&corev1.Pod{}).WithOptions(ctrlOpts).Complete(c)
+}
+
+func trimSpace(buf []byte) string {
+	line := unsafes.String(buf)
+	if len(line) > 0 && line[len(line)-1] == '\n' {
+		line = line[0 : len(line)-1]
+	}
+	for len(line) > 0 && line[len(line)-1] == '\r' {
+		line = line[0 : len(line)-1]
+	}
+
+	return line
 }
