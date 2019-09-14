@@ -10,6 +10,7 @@ import (
 	iopkg "io"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/cenkalti/backoff"
@@ -44,6 +45,7 @@ type Controller struct {
 	ctx       context.Context
 	ioStreams io.Streams
 	opts      *options.Options
+	ioMu      sync.Mutex
 }
 
 var _ ctrlreconcile.Reconciler = (*Controller)(nil)
@@ -181,7 +183,7 @@ func (c *Controller) Reconcile(req ctrlreconcile.Request) (result ctrlreconcile.
 				}
 
 				timeString, message := parts[0], parts[1]
-				event := LogEvent{
+				event := &LogEvent{
 					Message:        message,
 					PodName:        pod.Name,
 					ContainerName:  container.Name,
@@ -198,7 +200,11 @@ func (c *Controller) Reconcile(req ctrlreconcile.Request) (result ctrlreconcile.
 					event.Timestamp = &timestamp
 				}
 
-				if err := c.opts.Template.Execute(c.ioStreams.Out, event); err != nil {
+				// TODO(zchee): use goroutine
+				c.ioMu.Lock()
+				err = c.opts.Template.Execute(c.ioStreams.Out, event)
+				c.ioMu.Unlock()
+				if err != nil {
 					c.Log.Error(err, "failed to tmpl.Execute", "event", event)
 					return
 				}
