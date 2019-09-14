@@ -35,6 +35,7 @@ import (
 	"github.com/zchee/kt/pkg/options"
 )
 
+// Controller implements a reconcile.Reconciler.
 type Controller struct {
 	ctrlclient.Client
 	Manager   ctrlmanager.Manager
@@ -49,7 +50,7 @@ type Controller struct {
 
 var _ ctrlreconcile.Reconciler = (*Controller)(nil)
 
-// New returns a new Controller registered with the Manager.
+// New returns a new Controller registered with the ctrlmanager.Manager.
 func New(ctx context.Context, ioStreams io.Streams, mgr ctrlmanager.Manager, opts *options.Options) (*Controller, error) {
 	lvl := zap.NewAtomicLevelAt(zap.DebugLevel)
 	logger := ctrlzap.New(func(o *ctrlzap.Options) {
@@ -87,13 +88,14 @@ var colorList = [][2]*color.Color{
 
 func findColors(podName string) (podColor, containerColor *color.Color) {
 	digest := xxhash.New()
-	digest.Write(unsafes.Slice(podName))
+	digest.WriteString(podName)
 	idx := digest.Sum64() % uint64(len(colorList))
 
 	colors := colorList[idx]
 	return colors[0], colors[1]
 }
 
+// LogEvent represents a Pod log event.
 type LogEvent struct {
 	// Message is the log message itself
 	Message string `json:"message"`
@@ -114,6 +116,7 @@ type LogEvent struct {
 	ContainerColor *color.Color `json:"-"`
 }
 
+// Reconcile implements a ctrlreconcile.Reconciler.
 func (c *Controller) Reconcile(req ctrlreconcile.Request) (result ctrlreconcile.Result, err error) {
 	log := c.Log.WithName("Reconcile")
 
@@ -233,6 +236,7 @@ func (c *Controller) Reconcile(req ctrlreconcile.Request) (result ctrlreconcile.
 	return result, nil
 }
 
+// SetupWithManager setups the Controller with ctrlmanager.Manager.
 func (c *Controller) SetupWithManager(mgr ctrlmanager.Manager) error {
 	ctrlOpts := ctrlcontroller.Options{
 		Reconciler:              c,
