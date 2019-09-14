@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cmdoptions
+package io
 
 import (
 	"bytes"
@@ -24,7 +24,7 @@ import (
 
 // IOStreams provides the standard names for iostreams.  This is useful for embedding and for unit testing.
 // Inconsistent and different names make it hard to read and review code
-type IOStreams struct {
+type Streams struct {
 	// In think, os.Stdin
 	In io.Reader
 	// Out think, os.Stdout
@@ -34,12 +34,12 @@ type IOStreams struct {
 }
 
 // NewTestIOStreams returns a valid IOStreams and in, out, errout buffers for unit tests
-func NewTestIOStreams() (IOStreams, *bytes.Buffer, *bytes.Buffer, *bytes.Buffer) {
+func NewTestIOStreams() (Streams, *bytes.Buffer, *bytes.Buffer, *bytes.Buffer) {
 	in := &bytes.Buffer{}
 	out := &bytes.Buffer{}
 	errOut := &bytes.Buffer{}
 
-	return IOStreams{
+	return Streams{
 		In:     in,
 		Out:    out,
 		ErrOut: errOut,
@@ -47,9 +47,9 @@ func NewTestIOStreams() (IOStreams, *bytes.Buffer, *bytes.Buffer, *bytes.Buffer)
 }
 
 // NewTestIOStreamsDiscard returns a valid IOStreams that just discards
-func NewTestIOStreamsDiscard() IOStreams {
+func NewTestIOStreamsDiscard() Streams {
 	in := &bytes.Buffer{}
-	return IOStreams{
+	return Streams{
 		In:     in,
 		Out:    ioutil.Discard,
 		ErrOut: ioutil.Discard,
