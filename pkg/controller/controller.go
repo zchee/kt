@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff"
-	xxhash "github.com/cespare/xxhash/v2"
 	"github.com/go-logr/logr"
 	color "github.com/zchee/color/v2"
 	"go.uber.org/zap"
@@ -77,23 +76,9 @@ func New(ctx context.Context, ioStreams io.Streams, mgr ctrlmanager.Manager, opt
 	return c, nil
 }
 
-var colorList = [][2]*color.Color{
-	{color.New(color.FgHiCyan), color.New(color.FgCyan)},
-	{color.New(color.FgHiGreen), color.New(color.FgGreen)},
-	{color.New(color.FgHiMagenta), color.New(color.FgMagenta)},
-	{color.New(color.FgHiYellow), color.New(color.FgYellow)},
-	{color.New(color.FgHiBlue), color.New(color.FgBlue)},
-	{color.New(color.FgHiRed), color.New(color.FgRed)},
 }
 
-func findColors(podName string) (podColor, containerColor *color.Color) {
-	digest := xxhash.New()
-	digest.WriteString(podName)
-	idx := digest.Sum64() % uint64(len(colorList))
 
-	colors := colorList[idx]
-	return colors[0], colors[1]
-}
 
 // LogEvent represents a Pod log event.
 type LogEvent struct {
