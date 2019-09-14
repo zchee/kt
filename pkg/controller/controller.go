@@ -143,9 +143,11 @@ func (c *Controller) Reconcile(req ctrlreconcile.Request) (result ctrlreconcile.
 	boff := backoff.NewExponentialBackOff()
 	for i := range pod.Spec.Containers {
 		container := pod.Spec.Containers[i]
-		logOpts.Container = container.Name
+		podLogOpts := new(corev1.PodLogOptions)
+		podLogOpts = &logOpts // shallow copy
+		podLogOpts.Container = container.Name
 
-		stream, err := c.Clientset.CoreV1().Pods(pod.Namespace).GetLogs(pod.Name, &logOpts).Stream()
+		stream, err := c.Clientset.CoreV1().Pods(pod.Namespace).GetLogs(pod.Name, podLogOpts).Stream()
 		if err != nil {
 			if errStatus, ok := err.(apierrors.APIStatus); ok {
 				switch errStatus.Status().Code {
@@ -159,7 +161,7 @@ func (c *Controller) Reconcile(req ctrlreconcile.Request) (result ctrlreconcile.
 			return result, err
 		}
 
-		go func(container corev1.Container, logOpts corev1.PodLogOptions) {
+		go func(container corev1.Container, stream io.ReadCloser) {
 			r := bufio.NewReader(stream)
 
 			for {
@@ -219,7 +221,7 @@ func (c *Controller) Reconcile(req ctrlreconcile.Request) (result ctrlreconcile.
 					return
 				}
 			}
-		}(container, logOpts)
+		}(container, stream)
 
 		go func() {
 			<-c.ctx.Done()
