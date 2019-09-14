@@ -146,10 +146,10 @@ func (c *Controller) Reconcile(req ctrlreconcile.Request) (result ctrlreconcile.
 			if errStatus, ok := err.(apierrors.APIStatus); ok {
 				switch errStatus.Status().Code {
 				case http.StatusBadRequest:
-					return result, err
-				case http.StatusNotFound:
 					time.Sleep(boff.GetElapsedTime())
 					continue
+				case http.StatusNotFound:
+					return result, err
 				}
 			}
 			return result, err
