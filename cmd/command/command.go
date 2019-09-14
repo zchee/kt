@@ -8,14 +8,14 @@ package command
 import (
 	"context"
 	"flag"
-	"io"
+	iopkg "io"
 	"os"
 
 	"github.com/spf13/cobra"
 
 	"github.com/zchee/kt/cmd/command/completion"
 	"github.com/zchee/kt/cmd/command/tail"
-	"github.com/zchee/kt/pkg/cmdoptions"
+	"github.com/zchee/kt/pkg/io"
 )
 
 const (
@@ -33,7 +33,7 @@ func NewCommand(ctx context.Context) *cobra.Command {
 }
 
 // NewKTCommand creates the `kt` command and its nested children.
-func NewKTCommand(ctx context.Context, in io.Reader, out, errOut io.Writer) *cobra.Command {
+func NewKTCommand(ctx context.Context, in iopkg.Reader, out, errOut iopkg.Writer) *cobra.Command {
 	// Parent command to which all subcommands are added.
 	cmds := &cobra.Command{
 		Use:           "kt",
@@ -53,7 +53,7 @@ func NewKTCommand(ctx context.Context, in io.Reader, out, errOut io.Writer) *cob
 	addProfilingFlags(flags)
 	flags.AddGoFlagSet(flag.CommandLine)
 
-	ioStreams := cmdoptions.IOStreams{In: in, Out: out, ErrOut: errOut}
+	ioStreams := io.Streams{In: in, Out: out, ErrOut: errOut}
 
 	cmdTail := tail.NewCmdTail(ctx, ioStreams)
 	cmds.AddCommand(cmdTail)

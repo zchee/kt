@@ -26,8 +26,8 @@ type Manager struct {
 
 type Options = ctrlmanager.Options
 
-// NewManager returns a new Manager for creating Controllers.
-func NewManager(config *rest.Config, mgrOpts ctrlmanager.Options) (*Manager, error) {
+// New returns a new Manager for creating Controllers.
+func New(config *rest.Config, mgrOpts ctrlmanager.Options) (*Manager, error) {
 	kubescheme.AddToScheme(scheme)
 
 	lvl := zap.NewAtomicLevelAt(zap.InfoLevel)
