@@ -133,6 +133,10 @@ func (c *Controller) Reconcile(req ctrlreconcile.Request) (result ctrlreconcile.
 	if c.opts.Lines > 0 {
 		logOpts.TailLines = &c.opts.Lines
 	}
+	if c.opts.Timestamps {
+		sec := int64(c.opts.Since.Seconds())
+		logOpts.SinceSeconds = &sec
+	}
 
 	podColor, containerColor := findColors(pod.Name)
 
