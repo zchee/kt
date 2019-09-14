@@ -13,11 +13,13 @@ require (
 	github.com/go-logr/logr v0.1.1-0.20190903151443-a1ebd699b195
 	github.com/google/go-cmp v0.3.2-0.20190829225427-b1c9c4891a65
 	github.com/gophercloud/gophercloud v0.0.0-00010101000000-000000000000 // indirect
+	github.com/mattn/go-isatty v0.0.9 // indirect
 	github.com/spf13/cobra v0.0.6-0.20190805155617-b80588d523ec
 	github.com/spf13/pflag v1.0.4-0.20190814001055-972238283c06
+	github.com/zchee/color/v2 v2.0.3
 	go.opencensus.io v0.22.1
 	go.uber.org/zap v1.10.0
-	golang.org/x/sys v0.0.0-20190910064555-bbd175535a8b
+	golang.org/x/sys v0.0.0-20190913121621-c3b328c6e5a7
 	golang.org/x/xerrors v0.0.0-20190717185122-a985d3407aa7
 	k8s.io/api v0.0.0-20190905160310-fb749d2f1064
 	k8s.io/apiextensions-apiserver v0.0.0-20190906235842-a644246473f1 // indirect
