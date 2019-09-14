@@ -5,35 +5,43 @@
 package options
 
 import (
+	"regexp"
 	"text/template"
 	"time"
 )
 
 type Options struct {
-	// kubeconfig and context
-	KubeConfig  string
-	KubeContext string
-
 	// global filters
 	Exclude []string
 	Include []string
+
+	// kubeconfig and context
+	KubeConfig  string
+	KubeContext string
 
 	// pod filters
 	Container        string
 	ContainerState   string
 	ExcludeContainer string
 	Namespace        string
-	AllNamespaces    bool
 	Selector         string
-	Timestamps       bool
+	UseColor         string
+	Format           string
+	Output           string
 	Since            time.Duration
 	Concurrency      int
 
 	// misc options
-	Lines          int64
-	UseColor       string
-	TemplateString string
-	Template       *template.Template
-	Output         string
-	Help           bool
+	Lines         int64
+	Template      *template.Template
+	AllNamespaces bool
+	Timestamps    bool
+	Help          bool
+
+	// query
+	PodQuery              *regexp.Regexp
+	ContainerQuery        *regexp.Regexp
+	ExcludeContainerQuery *regexp.Regexp
+	ExcludeQuery          []*regexp.Regexp
+	IncludeQuery          []*regexp.Regexp
 }
