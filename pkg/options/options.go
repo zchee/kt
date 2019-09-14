@@ -23,7 +23,7 @@ type Options struct {
 	Container        string
 	ContainerState   string
 	ExcludeContainer string
-	Namespace        string
+	Namespaces       []string
 	Selector         string
 	UseColor         string
 	Format           string

@@ -19,6 +19,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
 
 	"github.com/zchee/kt/internal/unsafes"
 	"github.com/zchee/kt/pkg/controller"
@@ -67,7 +68,7 @@ func NewCmdTail(ctx context.Context, ioStreams io.Streams) *cobra.Command {
 	f.StringVarP(&opts.Container, "container", "c", opts.Container, "Container name when multiple containers in pod")
 	f.StringVar(&opts.ContainerState, "container-state", opts.ContainerState, "If present, tail containers with status in running, waiting or terminated. Default to running.")
 	f.StringVarP(&opts.ExcludeContainer, "exclude-container", "E", opts.ExcludeContainer, "Exclude a Container name")
-	f.StringVarP(&opts.Namespace, "namespace", "n", opts.Namespace, "Kubernetes namespace to use. Default to namespace configured in Kubernetes context")
+	f.StringSliceVarP(&opts.Namespaces, "namespaces", "n", opts.Namespaces, "Kubernetes namespace to use. Default to namespace configured in Kubernetes context. can set command separated multiple namespaces.")
 	f.BoolVar(&opts.AllNamespaces, "all-namespaces", opts.AllNamespaces, "If present, tail across all namespaces. A specific namespace is ignored even if specified with --namespace.")
 	f.StringVarP(&opts.Selector, "selector", "l", opts.Selector, "Selector (label query) to filter on. If present, default to \".*\" for the pod-query.")
 	f.BoolVarP(&opts.Timestamps, "timestamps", "t", opts.Timestamps, "Print timestamps")
@@ -131,8 +132,12 @@ func NewCmdTail(ctx context.Context, ioStreams io.Streams) *cobra.Command {
 		switch {
 		case opts.AllNamespaces:
 			mgrOpts.Namespace = metav1.NamespaceAll
-		case opts.Namespace != "":
-			mgrOpts.Namespace = opts.Namespace
+		case len(opts.Namespaces) >= 1:
+			if len(opts.Namespaces) == 1 {
+				mgrOpts.Namespace = opts.Namespaces[0]
+			} else {
+				mgrOpts.NewCache = cache.MultiNamespacedCacheBuilder(opts.Namespaces)
+			}
 		default:
 			rawConfig, err := clientConfig.RawConfig()
 			if err != nil {
