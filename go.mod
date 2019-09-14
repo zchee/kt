@@ -9,6 +9,7 @@ go 1.13
 require (
 	cloud.google.com/go v0.45.1 // indirect
 	github.com/Azure/go-autorest v0.0.0-00010101000000-000000000000 // indirect
+	github.com/cenkalti/backoff v1.1.1-0.20190506075156-2146c9339422
 	github.com/cespare/xxhash/v2 v2.1.0
 	github.com/dgrijalva/jwt-go v0.0.0-00010101000000-000000000000 // indirect
 	github.com/go-logr/logr v0.1.1-0.20190903151443-a1ebd699b195
