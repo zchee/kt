@@ -108,7 +108,7 @@ type LogEvent struct {
 	Namespace string `json:"namespace"`
 
 	// Timestamp of the pod
-	Timestamp *time.Time `json:"timestamp"`
+	Timestamp *time.Time `json:"timestamp,omitempty"`
 
 	PodColor       *color.Color `json:"-"`
 	ContainerColor *color.Color `json:"-"`
@@ -172,15 +172,28 @@ func (c *Controller) Reconcile(req ctrlreconcile.Request) (result ctrlreconcile.
 					c.Log.Error(err, "failed to ReadBytes")
 					return
 				}
-				line := trimSpace(l)
+				line := trimSpace(unsafes.String(l))
 
-				parts := strings.SplitN(line, " ", 2)
-				if len(parts) < 2 {
+				parts := strings.SplitN(line, " ", 3)
+				var (
+					timeString string
+					message    string
+				)
+				switch len(parts) {
+				case 2:
+					timeString = parts[0]
+					message = parts[1]
+				case 3:
+					timeString = parts[0]
+					message = parts[2]
+					if c.opts.Timestamps {
+						message = parts[1] + " " + message
+					}
+				default:
 					c.Log.Info("failed to split line", "line", line)
 					continue
 				}
 
-				timeString, message := parts[0], parts[1]
 				event := &LogEvent{
 					Message:        message,
 					PodName:        pod.Name,
@@ -188,7 +201,6 @@ func (c *Controller) Reconcile(req ctrlreconcile.Request) (result ctrlreconcile.
 					PodColor:       podColor,
 					ContainerColor: containerColor,
 				}
-
 				if c.opts.Timestamps {
 					timestamp, err := time.Parse(time.RFC3339Nano, timeString)
 					if err != nil {
@@ -228,14 +240,13 @@ func (c *Controller) SetupWithManager(mgr ctrlmanager.Manager) error {
 	return ctrlbuilder.ControllerManagedBy(mgr).For(&corev1.Pod{}).WithOptions(ctrlOpts).Complete(c)
 }
 
-func trimSpace(buf []byte) string {
-	line := unsafes.String(buf)
-	if len(line) > 0 && line[len(line)-1] == '\n' {
-		line = line[0 : len(line)-1]
+func trimSpace(s string) string {
+	if len(s) > 0 && s[len(s)-1] == '\n' {
+		s = s[0 : len(s)-1]
 	}
-	for len(line) > 0 && line[len(line)-1] == '\r' {
-		line = line[0 : len(line)-1]
+	for len(s) > 0 && s[len(s)-1] == '\r' {
+		s = s[0 : len(s)-1]
 	}
 
-	return line
+	return s
 }
