@@ -21,8 +21,8 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 
-	"github.com/zchee/kt/internal/unsafes"
 	"github.com/zchee/kt/pkg/controller"
+	"github.com/zchee/kt/pkg/internal/unsafes"
 	"github.com/zchee/kt/pkg/io"
 	"github.com/zchee/kt/pkg/manager"
 	"github.com/zchee/kt/pkg/options"

@@ -9,7 +9,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 
-	"github.com/zchee/kt/internal/unsafes"
+	"github.com/zchee/kt/pkg/internal/unsafes"
 )
 
 func TestSlice(t *testing.T) {
