@@ -36,11 +36,10 @@ func NewCommand(ctx context.Context) *cobra.Command {
 func NewKTCommand(ctx context.Context, in iopkg.Reader, out, errOut iopkg.Writer) *cobra.Command {
 	// Parent command to which all subcommands are added.
 	cmds := &cobra.Command{
-		Use:           "kt",
-		Short:         usageShort,
-		Long:          usageLong,
-		Version:       Version(),
-		SilenceErrors: true,
+		Use:     "kt",
+		Short:   usageShort,
+		Long:    usageLong,
+		Version: Version(),
 		// Hook before and after Run initialize and write profiles to disk, respectively
 		PersistentPreRunE:  func(*cobra.Command, []string) error { return initProfiling() },
 		PersistentPostRunE: func(*cobra.Command, []string) error { return flushProfiling() },
