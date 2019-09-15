@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file.
 
 // Package command provides the kt commands.
-package command
+package commands
 
 import (
 	"context"
@@ -13,8 +13,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/zchee/kt/cmd/command/completion"
-	"github.com/zchee/kt/cmd/command/tail"
+	"github.com/zchee/kt/pkg/commands/completion"
+	"github.com/zchee/kt/pkg/commands/tail"
 	"github.com/zchee/kt/pkg/io"
 )
 
