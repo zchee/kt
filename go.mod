@@ -34,7 +34,7 @@ require (
 	k8s.io/klog v0.4.0 // indirect
 	k8s.io/kube-openapi v0.0.0-20190816220812-743ec37842bf // indirect
 	k8s.io/utils v0.0.0-20190907131718-3d4f5b7dea0b // indirect
-	sigs.k8s.io/controller-runtime v0.2.1
+	sigs.k8s.io/controller-runtime v0.2.2
 )
 
 replace (
