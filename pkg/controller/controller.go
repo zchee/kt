@@ -9,7 +9,6 @@ import (
 	"context"
 	iopkg "io"
 	"net/http"
-	"strings"
 	"sync"
 	"time"
 
@@ -24,13 +23,11 @@ import (
 	ctrlbuilder "sigs.k8s.io/controller-runtime/pkg/builder"
 	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
 	ctrlcontroller "sigs.k8s.io/controller-runtime/pkg/controller"
-	ctrlhandler "sigs.k8s.io/controller-runtime/pkg/handler"
 	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
 	ctrlzap "sigs.k8s.io/controller-runtime/pkg/log/zap"
 	ctrlmanager "sigs.k8s.io/controller-runtime/pkg/manager"
 	ctrlpredicate "sigs.k8s.io/controller-runtime/pkg/predicate"
 	ctrlreconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
-	ctrlsource "sigs.k8s.io/controller-runtime/pkg/source"
 
 	"github.com/zchee/kt/pkg/internal/unsafes"
 	"github.com/zchee/kt/pkg/io"
@@ -39,13 +36,12 @@ import (
 
 // Controller implements a reconcile.Reconciler.
 type Controller struct {
-	client       ctrlclient.Client
-	controller   ctrlcontroller.Controller
-	clientset    kubernetes.Interface
-	mgr          ctrlmanager.Manager
-	predicate    ctrlpredicate.Predicate
-	eventHandler ctrlhandler.EventHandler
-	log          logr.Logger
+	client     ctrlclient.Client
+	controller ctrlcontroller.Controller
+	clientset  kubernetes.Interface
+	mgr        ctrlmanager.Manager
+	predicate  ctrlpredicate.Predicate
+	log        logr.Logger
 
 	ctx       context.Context
 	ioStreams io.Streams
@@ -67,28 +63,22 @@ func New(ctx context.Context, ioStreams io.Streams, mgr ctrlmanager.Manager, opt
 	ctrllog.SetLogger(log)
 
 	state := new(sync.Map)
-	predicateFilter := &PredicatePodEventFilter{
+	predicateFilter := &PredicateEventFilter{
 		ioStreams:    ioStreams,
 		states:       state,
 		log:          log.WithName("predicate"),
 		isNamespaced: (opts.AllNamespaces || len(opts.Namespaces) > 0),
-	}
-	eventHandler := &PodEventHandler{
-		ioStreams:    ioStreams,
-		states:       state,
-		log:          log.WithName("eventHandler"),
-		isNamespaced: (opts.AllNamespaces || len(opts.Namespaces) > 0),
+		query:        opts.Query,
 	}
 
 	c = &Controller{
-		client:       mgr.GetClient(),
-		mgr:          mgr,
-		predicate:    predicateFilter,
-		eventHandler: eventHandler,
-		log:          log,
-		ctx:          ctx,
-		ioStreams:    ioStreams,
-		opts:         opts,
+		client:    mgr.GetClient(),
+		mgr:       mgr,
+		predicate: predicateFilter,
+		log:       log,
+		ctx:       ctx,
+		ioStreams: ioStreams,
+		opts:      opts,
 	}
 
 	c.clientset, err = kubernetes.NewForConfig(mgr.GetConfig())
@@ -172,38 +162,41 @@ func (c *Controller) Reconcile(req ctrlreconcile.Request) (result ctrlreconcile.
 				}
 				line := trimSpace(unsafes.String(l))
 
-				var (
-					timeString string
-					message    string
-				)
-				parts := strings.SplitN(line, " ", 3)
-				switch len(parts) {
-				case 2:
-					timeString = parts[0]
-					message = parts[1]
-				case 3:
-					timeString = parts[0]
-					message = parts[2]
-					if c.opts.Timestamps {
-						message = parts[1] + " " + message
-					}
-				default:
-					message = line // fellback
-				}
+				// var (
+				// 	timeString string
+				// 	message    string
+				// )
+				// parts := strings.SplitN(line, " ", 3)
+				// switch len(parts) {
+				// case 2:
+				// 	timeString = parts[0]
+				// 	message = parts[1]
+				// case 3:
+				// 	timeString = parts[0]
+				// 	message = parts[2]
+				// 	if c.opts.Timestamps {
+				// 		message = parts[1] + " " + message
+				// 	}
+				// default:
+				// 	message = line // fellback
+				// }
 
 				event := &LogEvent{
-					Message:        message,
+					Message:        line,
 					PodName:        pod.Name,
 					ContainerName:  container.Name,
 					PodColor:       podColor,
 					ContainerColor: containerColor,
 				}
-				if c.opts.Timestamps {
-					timestamp, err := time.Parse(time.RFC3339Nano, timeString)
-					if err == nil {
-						event.Timestamp = &timestamp // omit error handling
-					}
+				if c.opts.AllNamespaces || len(c.opts.Namespaces) > 0 {
+					event.Namespace = pod.Namespace
 				}
+				// if c.opts.Timestamps {
+				// 	timestamp, err := time.Parse(time.RFC3339Nano, timeString)
+				// 	if err == nil {
+				// 		event.Timestamp = &timestamp // omit error handling
+				// 	}
+				// }
 
 				// TODO(zchee): use goroutine
 				c.ioMu.Lock()
@@ -217,7 +210,6 @@ func (c *Controller) Reconcile(req ctrlreconcile.Request) (result ctrlreconcile.
 		}(container, stream)
 	}
 
-	log.Info("end of Reconcile")
 	return result, nil
 }
 
@@ -234,11 +226,6 @@ func (c *Controller) SetupWithManager(mgr ctrlmanager.Manager) (err error) {
 	}
 
 	return nil
-}
-
-func (c *Controller) Watch() error {
-	// set eventHandler and run Watch
-	return c.controller.Watch(&ctrlsource.Kind{Type: &corev1.Pod{}}, c.eventHandler)
 }
 
 func trimSpace(s string) string {
