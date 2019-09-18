@@ -162,25 +162,6 @@ func (c *Controller) Reconcile(req ctrlreconcile.Request) (result ctrlreconcile.
 				}
 				line := trimSpace(unsafes.String(l))
 
-				// var (
-				// 	timeString string
-				// 	message    string
-				// )
-				// parts := strings.SplitN(line, " ", 3)
-				// switch len(parts) {
-				// case 2:
-				// 	timeString = parts[0]
-				// 	message = parts[1]
-				// case 3:
-				// 	timeString = parts[0]
-				// 	message = parts[2]
-				// 	if c.opts.Timestamps {
-				// 		message = parts[1] + " " + message
-				// 	}
-				// default:
-				// 	message = line // fellback
-				// }
-
 				event := &LogEvent{
 					Message:        line,
 					PodName:        pod.Name,
@@ -191,12 +172,6 @@ func (c *Controller) Reconcile(req ctrlreconcile.Request) (result ctrlreconcile.
 				if c.opts.AllNamespaces || len(c.opts.Namespaces) > 0 {
 					event.Namespace = pod.Namespace
 				}
-				// if c.opts.Timestamps {
-				// 	timestamp, err := time.Parse(time.RFC3339Nano, timeString)
-				// 	if err == nil {
-				// 		event.Timestamp = &timestamp // omit error handling
-				// 	}
-				// }
 
 				// TODO(zchee): use goroutine
 				c.ioMu.Lock()
