@@ -8,6 +8,10 @@ import (
 	"regexp"
 	"text/template"
 	"time"
+
+	errors "golang.org/x/xerrors"
+
+	corev1 "k8s.io/api/core/v1"
 )
 
 type Options struct {
@@ -37,8 +41,46 @@ type Options struct {
 	AllNamespaces bool
 	Timestamps    bool
 
-	// query
+	Query *Query
+}
+
+type ContainerState string
+
+const (
+	Running    = "running"
+	Waiting    = "waiting"
+	Terminated = "terminated"
+)
+
+func NewContainerState(state string) (ContainerState, error) {
+	switch state {
+	case Running:
+		return Running, nil
+	case Waiting:
+		return Waiting, nil
+	case Terminated:
+		return Terminated, nil
+	}
+
+	return "", errors.New("containerState should be one of 'running', 'waiting', or 'terminated'")
+}
+
+func (cs ContainerState) Match(cState corev1.ContainerState) bool {
+	switch cs {
+	case Running:
+		return cState.Running != nil
+	case Waiting:
+		return cState.Waiting != nil
+	case Terminated:
+		return cState.Terminated != nil
+	default:
+		return false
+	}
+}
+
+type Query struct {
 	PodQuery              *regexp.Regexp
+	ContainerState        ContainerState
 	ContainerQuery        *regexp.Regexp
 	ExcludeContainerQuery *regexp.Regexp
 	ExcludeQuery          []*regexp.Regexp
