@@ -63,9 +63,9 @@ func NewKTCommand(ctx context.Context, in iopkg.Reader, out, errOut iopkg.Writer
 		PersistentPostRunE: func(*cobra.Command, []string) error { return flushProfiling() },
 	}
 	cmd.SetVersionTemplate(versionTempl)
+	cmd.Flags().BoolP("version", "v", false, "Show "+cmd.Name()+" version.") // version flag is root only
 
 	var completion string
-	cmd.Flags().BoolP("version", "v", false, "Show "+cmd.Name()+" version.") // version flag is root only
 	cmd.Flags().StringVar(&completion, "completion", completion, "Outputs kt command-line completion code for the specified shell. Can be 'bash' or 'zsh'")
 
 	opts := &options.Options{
@@ -111,22 +111,6 @@ func NewKTCommand(ctx context.Context, in iopkg.Reader, out, errOut iopkg.Writer
 		if completion != "" {
 			return RunCompletion(ioStreams.Out, completion, cmd)
 		}
-
-		podQuery := ".*"
-		if len(args) == 1 {
-			podQuery = args[0]
-		}
-		pQuery, err := regexp.Compile(podQuery)
-		if err != nil {
-			return errors.Errorf("failed to compile regular expression from query: %w", err)
-		}
-		opts.PodQuery = pQuery
-
-		cQuery, err := regexp.Compile(opts.Container)
-		if err != nil {
-			return errors.Errorf("failed to compile regular expression for container query: %w", err)
-		}
-		opts.ContainerQuery = cQuery
 
 		if opts.KubeConfig == "" {
 			opts.KubeConfig = os.Getenv("KUBECONFIG")
@@ -188,7 +172,8 @@ func NewKTCommand(ctx context.Context, in iopkg.Reader, out, errOut iopkg.Writer
 			return errors.New("color flag should be one of 'always', 'never', or 'auto'")
 		}
 
-		if format := opts.Format; format == "" {
+		if opts.Format == "" {
+			var format string
 			switch opts.Output {
 			case "default":
 				if color.NoColor {
@@ -208,6 +193,7 @@ func NewKTCommand(ctx context.Context, in iopkg.Reader, out, errOut iopkg.Writer
 			case "json":
 				format = "{{json .}}\n"
 			}
+
 			opts.Format = format
 		}
 
@@ -225,10 +211,32 @@ func NewKTCommand(ctx context.Context, in iopkg.Reader, out, errOut iopkg.Writer
 		}
 		opts.Template = template.Must(template.New("log").Funcs(tmplFuncs).Parse(opts.Format))
 
-		kt.ctrl, err = controller.New(ctx, ioStreams, kt.mgr, opts)
+		query := new(options.Query)
 
-		if err := kt.ctrl.Watch(); err != nil {
-			return errors.Errorf("failed to watch: %w", err)
+		podQuery := ".*"
+		if len(args) == 1 {
+			podQuery = args[0]
+		}
+		query.PodQuery, err = regexp.Compile(podQuery)
+		if err != nil {
+			return errors.Errorf("failed to compile regular expression from query: %w", err)
+		}
+
+		query.ContainerQuery, err = regexp.Compile(opts.Container)
+		if err != nil {
+			return errors.Errorf("failed to compile regular expression for container query: %w", err)
+		}
+
+		query.ContainerState, err = options.NewContainerState(opts.ContainerState)
+		if err != nil {
+			return err
+		}
+
+		opts.Query = query
+
+		kt.ctrl, err = controller.New(ctx, ioStreams, kt.mgr, opts)
+		if err != nil {
+			return errors.Errorf("failed to create controller: %w", err)
 		}
 
 		return kt.RunTail(ctx)
