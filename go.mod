@@ -16,35 +16,38 @@ require (
 	github.com/prometheus/client_golang v1.1.0 // indirect
 	github.com/prometheus/client_model v0.0.0-20190812154241-14fe0d1b01d4 // indirect
 	github.com/prometheus/common v0.7.0 // indirect
-	github.com/prometheus/procfs v0.0.4 // indirect
+	github.com/prometheus/procfs v0.0.5 // indirect
 	github.com/spf13/cobra v0.0.6-0.20190805155617-b80588d523ec
-	github.com/spf13/pflag v1.0.4-0.20190814001055-972238283c06
+	github.com/spf13/pflag v1.0.4
 	github.com/zchee/color/v2 v2.0.3
 	go.opencensus.io v0.22.1
 	go.uber.org/zap v1.10.0
 	golang.org/x/crypto v0.0.0-20190911031432-227b76d455e7 // indirect
-	golang.org/x/net v0.0.0-20190912160710-24e19bdeb0f2 // indirect
-	golang.org/x/sys v0.0.0-20190913121621-c3b328c6e5a7
+	golang.org/x/net v0.0.0-20190918130420-a8b05e9114ab // indirect
+	golang.org/x/sys v0.0.0-20190916202348-b4ddaad3f8a3
 	golang.org/x/xerrors v0.0.0-20190717185122-a985d3407aa7
 	google.golang.org/appengine v1.6.2 // indirect
 	k8s.io/api v0.0.0-20190913080256-21721929cffa
-	k8s.io/apiextensions-apiserver v0.0.0-20190913084637-b88784537d9e // indirect
-	k8s.io/apimachinery v0.0.0-20190913075813-344bcc0201c9
+	k8s.io/apiextensions-apiserver v0.0.0-20190918080820-40952ff8d5b6 // indirect
+	k8s.io/apimachinery v0.0.0-20190917163033-a891081239f5
 	k8s.io/client-go v11.0.1-0.20190409021438-1a26190bd76a+incompatible
 	k8s.io/klog v0.4.0 // indirect
-	k8s.io/kube-openapi v0.0.0-20190816220812-743ec37842bf // indirect
-	k8s.io/utils v0.0.0-20190907131718-3d4f5b7dea0b // indirect
-	sigs.k8s.io/controller-runtime v0.2.1
+	k8s.io/kube-openapi v0.0.0-20190918143330-0270cf2f1c1d // indirect
+	sigs.k8s.io/controller-runtime v0.2.2
 )
 
 replace (
 	k8s.io/client-go => k8s.io/client-go v0.0.0-20190819141724-e14f31a72a77 // kubernetes-1.15.3
-	sigs.k8s.io/controller-runtime => sigs.k8s.io/controller-runtime v0.2.1
+	sigs.k8s.io/controller-runtime => sigs.k8s.io/controller-runtime v0.2.2
 )
 
 replace (
 	k8s.io/api => k8s.io/api v0.0.0-20190819141258-3544db3b9e44 // kubernetes-1.15.3
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.0.0-20190819143637-0dbe462fe92d // kubernetes-1.15.3
 	k8s.io/apimachinery => k8s.io/apimachinery v0.0.0-20190817020851-f2f3a405f61d // kubernetes-1.15.3
-	k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20180731170545-e3762e86a74c // sigs.k8s.io/controller-runtime@v0.2.1
+	k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20180731170545-e3762e86a74c // sigs.k8s.io/controller-runtime@v0.2.2
+	k8s.io/utils => k8s.io/utils v0.0.0-20190506122338-8fab8cb257d5 // sigs.k8s.io/controller-runtime@v0.2.2
 )
+
+// workaround for spf13/pflag@e8f29969b682c41a730f8f08b76033b120498464
+replace github.com/spf13/pflag => github.com/spf13/pflag v1.0.4-0.20190814001055-972238283c06
