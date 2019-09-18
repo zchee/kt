@@ -5,21 +5,16 @@
 package main
 
 import (
-	"context"
 	"os"
 
 	// initialize all known client auth plugins
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
 	"github.com/zchee/kt/pkg/commands"
-	"github.com/zchee/kt/pkg/signalcontext"
 )
 
 func main() {
-	ctx, cancel := context.WithCancel(signalcontext.NewContext())
-	defer cancel()
-
-	if err := commands.NewCommand(ctx).Execute(); err != nil {
+	if err := commands.NewCommand().Execute(); err != nil {
 		os.Exit(1)
 	}
 }

@@ -40,8 +40,8 @@ kt tails the Kubernetes logs for a container in a pod or specified resource.`
 )
 
 // NewCommand creates the `kt` command with arguments.
-func NewCommand(ctx context.Context) *cobra.Command {
-	return NewKTCommand(ctx, os.Stdin, os.Stdout, os.Stderr)
+func NewCommand() *cobra.Command {
+	return NewKTCommand(os.Stdin, os.Stdout, os.Stderr)
 }
 
 type KT struct {
@@ -50,7 +50,9 @@ type KT struct {
 }
 
 // NewKTCommand creates the `kt` command and its nested children.
-func NewKTCommand(ctx context.Context, in iopkg.Reader, out, errOut iopkg.Writer) *cobra.Command {
+func NewKTCommand(in iopkg.Reader, out, errOut iopkg.Writer) *cobra.Command {
+	ctx := context.Background()
+
 	ioStreams := io.Streams{In: in, Out: out, ErrOut: errOut}
 
 	cmd := &cobra.Command{
