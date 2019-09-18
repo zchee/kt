@@ -36,7 +36,6 @@ type Options struct {
 	Template      *template.Template
 	AllNamespaces bool
 	Timestamps    bool
-	Help          bool
 
 	// query
 	PodQuery              *regexp.Regexp

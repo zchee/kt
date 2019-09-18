@@ -2,14 +2,12 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package completion
+package commands
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"io"
-	"os"
 
 	"github.com/spf13/cobra"
 )
@@ -61,29 +59,29 @@ var (
 )
 
 // NewCmdCompletion creates the `completion` command.
-func NewCmdCompletion(_ context.Context, out io.Writer, boilerPlate string) *cobra.Command {
-	shells := []string{}
-	for s := range completionShells {
-		shells = append(shells, s)
-	}
-
-	cmd := &cobra.Command{
-		Use:                   "completion SHELL",
-		DisableFlagsInUseLine: true,
-		Short:                 "Output shell completion code for the specified shell (bash or zsh)",
-		Long:                  completionLong,
-		Example:               completionExample,
-		Run: func(cmd *cobra.Command, args []string) {
-			if err := RunCompletion(out, boilerPlate, cmd, args); err != nil {
-				fmt.Fprintln(os.Stderr, err)
-				os.Exit(1)
-			}
-		},
-		ValidArgs: shells,
-	}
-
-	return cmd
-}
+// func NewCmdCompletion(_ context.Context, out io.Writer, boilerPlate string) *cobra.Command {
+// 	shells := []string{}
+// 	for s := range completionShells {
+// 		shells = append(shells, s)
+// 	}
+//
+// 	cmd := &cobra.Command{
+// 		Use:                   "completion SHELL",
+// 		DisableFlagsInUseLine: true,
+// 		Short:                 "Output shell completion code for the specified shell (bash or zsh)",
+// 		Long:                  completionLong,
+// 		Example:               completionExample,
+// 		Run: func(cmd *cobra.Command, args []string) {
+// 			if err := RunCompletion(out, boilerPlate, cmd, args); err != nil {
+// 				fmt.Fprintln(os.Stderr, err)
+// 				os.Exit(1)
+// 			}
+// 		},
+// 		ValidArgs: shells,
+// 	}
+//
+// 	return cmd
+// }
 
 func UsageErrorf(cmd *cobra.Command, format string, args ...interface{}) error {
 	msg := fmt.Sprintf(format, args...)
@@ -91,30 +89,24 @@ func UsageErrorf(cmd *cobra.Command, format string, args ...interface{}) error {
 }
 
 // RunCompletion checks given arguments and executes command.
-func RunCompletion(out io.Writer, boilerPlate string, cmd *cobra.Command, args []string) error {
-	if len(args) == 0 {
-		return UsageErrorf(cmd, "Shell not specified.")
-	}
-	if len(args) > 1 {
-		return UsageErrorf(cmd, "Too many arguments. Expected only the shell type.")
-	}
-	run, found := completionShells[args[0]]
+func RunCompletion(out io.Writer, shell string, cmd *cobra.Command) error {
+	runFunc, found := completionShells[shell]
 	if !found {
-		return UsageErrorf(cmd, "Unsupported shell type %q.", args[0])
+		return UsageErrorf(cmd, "Unsupported shell type %q.", shell)
 	}
 
-	return run(out, boilerPlate, cmd.Parent())
+	return runFunc(out, "", cmd)
 }
 
-func runCompletionBash(out io.Writer, boilerPlate string, kt *cobra.Command) error {
+func runCompletionBash(out io.Writer, boilerPlate string, cmd *cobra.Command) error {
 	if _, err := out.Write([]byte(boilerPlate)); err != nil {
 		return err
 	}
 
-	return kt.GenBashCompletion(out)
+	return cmd.GenBashCompletion(out)
 }
 
-func runCompletionZsh(out io.Writer, boilerPlate string, kt *cobra.Command) error {
+func runCompletionZsh(out io.Writer, boilerPlate string, cmd *cobra.Command) error {
 	zshHead := "#compdef kt\n"
 
 	out.Write([]byte(zshHead))
@@ -268,7 +260,7 @@ __kt_convert_bash_to_zsh() {
 	out.Write([]byte(zshInitialization))
 
 	buf := new(bytes.Buffer)
-	kt.GenBashCompletion(buf)
+	cmd.GenBashCompletion(buf)
 	out.Write(buf.Bytes())
 
 	zshTail := `
