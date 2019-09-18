@@ -227,7 +227,7 @@ func NewKTCommand(ctx context.Context, in iopkg.Reader, out, errOut iopkg.Writer
 
 		kt.ctrl, err = controller.New(ctx, ioStreams, kt.mgr, opts)
 
-		if err := kt.ctrl.Watch(ioStreams); err != nil {
+		if err := kt.ctrl.Watch(); err != nil {
 			return errors.Errorf("failed to watch: %w", err)
 		}
 

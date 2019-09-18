@@ -7,6 +7,7 @@ package controller
 import (
 	"bufio"
 	"context"
+	iopkg "io"
 	"net/http"
 	"strings"
 	"sync"
@@ -14,7 +15,6 @@ import (
 
 	"github.com/cenkalti/backoff"
 	"github.com/go-logr/logr"
-	color "github.com/zchee/color/v2"
 	"go.uber.org/zap"
 	errors "golang.org/x/xerrors"
 
@@ -24,70 +24,104 @@ import (
 	ctrlbuilder "sigs.k8s.io/controller-runtime/pkg/builder"
 	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
 	ctrlcontroller "sigs.k8s.io/controller-runtime/pkg/controller"
+	ctrlhandler "sigs.k8s.io/controller-runtime/pkg/handler"
 	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
 	ctrlzap "sigs.k8s.io/controller-runtime/pkg/log/zap"
 	ctrlmanager "sigs.k8s.io/controller-runtime/pkg/manager"
+	ctrlpredicate "sigs.k8s.io/controller-runtime/pkg/predicate"
 	ctrlreconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
+	ctrlsource "sigs.k8s.io/controller-runtime/pkg/source"
 
-	"github.com/zchee/kt/internal/unsafes"
+	"github.com/zchee/kt/pkg/internal/unsafes"
 	"github.com/zchee/kt/pkg/io"
 	"github.com/zchee/kt/pkg/options"
 )
 
 // Controller implements a reconcile.Reconciler.
 type Controller struct {
-	ctrlclient.Client
-	Manager   ctrlmanager.Manager
-	Log       logr.Logger
-	Clientset kubernetes.Interface
+	client       ctrlclient.Client
+	controller   ctrlcontroller.Controller
+	clientset    kubernetes.Interface
+	mgr          ctrlmanager.Manager
+	predicate    ctrlpredicate.Predicate
+	eventHandler ctrlhandler.EventHandler
+	log          logr.Logger
 
 	ctx       context.Context
 	ioStreams io.Streams
-	opts      *options.Options
 	ioMu      sync.Mutex
+	opts      *options.Options
 }
 
 var _ ctrlreconcile.Reconciler = (*Controller)(nil)
 
-// New returns a new Controller registered with the ctrlmanager.Manager.
-func New(ctx context.Context, ioStreams io.Streams, mgr ctrlmanager.Manager, opts *options.Options) (*Controller, error) {
+// New returns the new Controller registered with the manager.Manager.
+func New(ctx context.Context, ioStreams io.Streams, mgr ctrlmanager.Manager, opts *options.Options) (c *Controller, err error) {
 	lvl := zap.NewAtomicLevelAt(zap.DebugLevel)
-	logger := ctrlzap.New(func(o *ctrlzap.Options) {
+	log := ctrlzap.New(func(o *ctrlzap.Options) {
 		o.Level = &lvl
 		o.Development = true
 		o.DestWritter = ioStreams.ErrOut
-	})
-	ctrllog.SetLogger(logger)
+	}).WithName("controller")
 
-	c := &Controller{
-		Client:    mgr.GetClient(),
-		Manager:   mgr,
-		Log:       logger.WithName("controller"),
-		ctx:       ctx,
-		ioStreams: ioStreams,
-		opts:      opts,
+	ctrllog.SetLogger(log)
+
+	state := new(sync.Map)
+	predicateFilter := &PredicatePodEventFilter{
+		ioStreams:    ioStreams,
+		states:       state,
+		log:          log.WithName("predicate"),
+		isNamespaced: (opts.AllNamespaces || len(opts.Namespaces) > 0),
+	}
+	eventHandler := &PodEventHandler{
+		ioStreams:    ioStreams,
+		states:       state,
+		log:          log.WithName("eventHandler"),
+		isNamespaced: (opts.AllNamespaces || len(opts.Namespaces) > 0),
+	}
+
+	c = &Controller{
+		client:       mgr.GetClient(),
+		mgr:          mgr,
+		predicate:    predicateFilter,
+		eventHandler: eventHandler,
+		log:          log,
+		ctx:          ctx,
+		ioStreams:    ioStreams,
+		opts:         opts,
+	}
+
+	c.clientset, err = kubernetes.NewForConfig(mgr.GetConfig())
+	if err != nil {
+		return nil, errors.Errorf("failed to new clientset: %w", err)
 	}
 
 	if err := c.SetupWithManager(mgr); err != nil {
-		c.Log.Error(err, "failed to create controller")
+		c.log.Error(err, "failed to setup controller with manager", "Controller", c)
 		return nil, err
 	}
 
 	return c, nil
 }
 
+const (
+	lineDelim = '\n'
+)
+
 // Reconcile implements a ctrlreconcile.Reconciler.
 func (c *Controller) Reconcile(req ctrlreconcile.Request) (result ctrlreconcile.Result, err error) {
-	log := c.Log.WithName("Reconcile")
+	log := c.log.WithName("Reconcile").WithValues("req.Namespace", req.Namespace, "req.Name", req.Name)
 
 	var pod corev1.Pod
-	if err := c.Get(c.ctx, req.NamespacedName, &pod); err != nil {
+	if err := c.client.Get(c.ctx, req.NamespacedName, &pod); err != nil {
 		if ctrlclient.IgnoreNotFound(err) != nil {
 			log.Error(err, "failed to get pod")
 			return result, err
 		}
 		return result, nil
 	}
+
+	podColor, containerColor := findColors(pod.Name)
 
 	logOpts := &corev1.PodLogOptions{
 		Follow:     true,
@@ -101,8 +135,6 @@ func (c *Controller) Reconcile(req ctrlreconcile.Request) (result ctrlreconcile.
 		logOpts.SinceSeconds = &sec
 	}
 
-	podColor, containerColor := findColors(pod.Name)
-
 	boff := backoff.NewExponentialBackOff()
 	for i := range pod.Spec.Containers {
 		container := pod.Spec.Containers[i]
@@ -110,7 +142,7 @@ func (c *Controller) Reconcile(req ctrlreconcile.Request) (result ctrlreconcile.
 		*podLogOpts = *logOpts // shallow copy
 		podLogOpts.Container = container.Name
 
-		stream, err := c.Clientset.CoreV1().Pods(pod.Namespace).GetLogs(pod.Name, podLogOpts).Stream()
+		stream, err := c.clientset.CoreV1().Pods(pod.Namespace).GetLogs(pod.Name, podLogOpts).Context(c.ctx).Stream()
 		if err != nil {
 			if errStatus, ok := err.(apierrors.APIStatus); ok {
 				switch errStatus.Status().Code {
@@ -124,26 +156,27 @@ func (c *Controller) Reconcile(req ctrlreconcile.Request) (result ctrlreconcile.
 			return result, err
 		}
 
-		go func(container corev1.Container, stream io.ReadCloser) {
-			r := bufio.NewReader(stream)
+		go func(container corev1.Container, stream iopkg.ReadCloser) {
+			defer stream.Close()
 
+			r := bufio.NewReader(stream)
 			for {
-				l, err := r.ReadBytes('\n')
+				l, err := r.ReadBytes(lineDelim)
 				if err != nil {
-					if errors.Is(err, io.EOF) {
+					if errors.Is(err, iopkg.EOF) {
 						stream.Close()
 						return
 					}
-					c.Log.Error(err, "failed to ReadBytes")
+					c.log.Error(err, "failed to ReadBytes")
 					return
 				}
 				line := trimSpace(unsafes.String(l))
 
-				parts := strings.SplitN(line, " ", 3)
 				var (
 					timeString string
 					message    string
 				)
+				parts := strings.SplitN(line, " ", 3)
 				switch len(parts) {
 				case 2:
 					timeString = parts[0]
@@ -155,8 +188,7 @@ func (c *Controller) Reconcile(req ctrlreconcile.Request) (result ctrlreconcile.
 						message = parts[1] + " " + message
 					}
 				default:
-					c.Log.Info("failed to split line", "line", line)
-					continue
+					message = line // fellback
 				}
 
 				event := &LogEvent{
@@ -168,11 +200,9 @@ func (c *Controller) Reconcile(req ctrlreconcile.Request) (result ctrlreconcile.
 				}
 				if c.opts.Timestamps {
 					timestamp, err := time.Parse(time.RFC3339Nano, timeString)
-					if err != nil {
-						c.Log.Error(err, "failed to parse timestamp", "timeString", timeString)
-						return
+					if err == nil {
+						event.Timestamp = &timestamp // omit error handling
 					}
-					event.Timestamp = &timestamp
 				}
 
 				// TODO(zchee): use goroutine
@@ -180,30 +210,35 @@ func (c *Controller) Reconcile(req ctrlreconcile.Request) (result ctrlreconcile.
 				err = c.opts.Template.Execute(c.ioStreams.Out, event)
 				c.ioMu.Unlock()
 				if err != nil {
-					c.Log.Error(err, "failed to tmpl.Execute", "event", event)
+					c.log.Error(err, "failed to tmpl.Execute", "event", event)
 					return
 				}
 			}
 		}(container, stream)
-
-		go func() {
-			<-c.ctx.Done()
-			stream.Close()
-		}()
 	}
 
 	log.Info("end of Reconcile")
 	return result, nil
 }
 
-// SetupWithManager setups the Controller with ctrlmanager.Manager.
-func (c *Controller) SetupWithManager(mgr ctrlmanager.Manager) error {
+// SetupWithManager setups the Controller with manager.Manager.
+func (c *Controller) SetupWithManager(mgr ctrlmanager.Manager) (err error) {
 	ctrlOpts := ctrlcontroller.Options{
 		Reconciler:              c,
 		MaxConcurrentReconciles: c.opts.Concurrency,
 	}
 
-	return ctrlbuilder.ControllerManagedBy(mgr).For(&corev1.Pod{}).WithOptions(ctrlOpts).Complete(c)
+	c.controller, err = ctrlbuilder.ControllerManagedBy(mgr).For(&corev1.Pod{}).WithEventFilter(c.predicate).WithOptions(ctrlOpts).Build(c)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *Controller) Watch() error {
+	// set eventHandler and run Watch
+	return c.controller.Watch(&ctrlsource.Kind{Type: &corev1.Pod{}}, c.eventHandler)
 }
 
 func trimSpace(s string) string {
