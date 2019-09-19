@@ -18,7 +18,7 @@ require (
 	github.com/prometheus/common v0.7.0 // indirect
 	github.com/prometheus/procfs v0.0.5 // indirect
 	github.com/spf13/cobra v0.0.6-0.20190805155617-b80588d523ec
-	github.com/spf13/pflag v1.0.4
+	github.com/spf13/pflag v1.0.5
 	github.com/zchee/color/v2 v2.0.3
 	go.opencensus.io v0.22.1
 	go.uber.org/zap v1.10.0
