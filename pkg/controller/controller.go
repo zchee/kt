@@ -140,7 +140,7 @@ func (c *Controller) Reconcile(req ctrlreconcile.Request) (result ctrlreconcile.
 					time.Sleep(boff.GetElapsedTime())
 					continue
 				case http.StatusNotFound:
-					return result, err
+					return result, nil
 				}
 			}
 			return result, err
