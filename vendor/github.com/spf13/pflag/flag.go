@@ -190,6 +190,18 @@ type Value interface {
 	Type() string
 }
 
+// SliceValue is a secondary interface to all flags which hold a list
+// of values.  This allows full control over the value of list flags,
+// and avoids complicated marshalling and unmarshalling to csv.
+type SliceValue interface {
+	// Append adds the specified value to the end of the flag value list.
+	Append(string) error
+	// Replace will fully overwrite any data currently in the flag value list.
+	Replace([]string) error
+	// GetSlice returns the flag value list as an array of strings.
+	GetSlice() []string
+}
+
 // sortFlags returns the flags as a slice in lexicographical sorted order.
 func sortFlags(flags map[NormalizedName]*Flag) []*Flag {
 	list := make(sort.StringSlice, len(flags))

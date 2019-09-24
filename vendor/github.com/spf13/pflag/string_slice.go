@@ -62,6 +62,20 @@ func (s *stringSliceValue) String() string {
 	return "[" + str + "]"
 }
 
+func (s *stringSliceValue) Append(val string) error {
+	*s.value = append(*s.value, val)
+	return nil
+}
+
+func (s *stringSliceValue) Replace(val []string) error {
+	*s.value = val
+	return nil
+}
+
+func (s *stringSliceValue) GetSlice() []string {
+	return *s.value
+}
+
 func stringSliceConv(sval string) (interface{}, error) {
 	sval = sval[1 : len(sval)-1]
 	// An empty string would cause a slice with one (empty) string
