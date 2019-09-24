@@ -3,6 +3,7 @@ run:
   issues-exit-code: 1
   tests: true
   skip-dirs:
+    - "pkg/internal/unsafes"
     - "vendor$"
   skip-files:
     - ".*\\.pb\\.go$"
@@ -12,7 +13,7 @@ run:
 
 linters-settings:
   dupl:
-    #threshold: 400
+    threshold: 400
   errcheck:
     check-type-assertions: true
     check-blank: true
@@ -28,6 +29,31 @@ linters-settings:
     min-confidence: 0.3
   govet:
     check-shadowing: false
+    enable:
+      - asmdecl
+      - assign
+      - atomic
+      - bools
+      - buildtag
+      - cgocall
+      - composites
+      - copylocks
+      - errorsas
+      - httpresponse
+      - loopclosure
+      - lostcancel
+      - nilfunc
+      - printf
+      - shift
+      - stdmethods
+      - structtag
+      - tests
+      - unmarshal
+      - unreachable
+      - unsafeptr
+      - unusedresult
+    disable:
+      - shadow
   gocritic:
     enabled-tags:
       - diagnostic
@@ -64,7 +90,6 @@ linters:
     - depguard
     - dupl
     - errcheck
-    - funlen
     - goconst
     - gocritic
     - gofmt
@@ -85,6 +110,7 @@ linters:
     - unparam
     - varcheck
   disable:
+    - funlen
     - gochecknoglobals
     - gochecknoinits
     - gocyclo
