@@ -5,36 +5,34 @@
 package unsafes
 
 import (
-	"reflect"
 	"unsafe"
 )
 
-// Slice returns a byte array that points to the given string without a heap allocation.
-// The string must be preserved until the  byte arrayis disposed.
-func Slice(s string) (p []byte) {
-	if s == "" {
-		return
+// String transforms a slice of byte into a string without doing the actual copy
+// of the data.
+func String(b []byte) string {
+	if b == nil {
+		return ""
 	}
 
-	sh := (*reflect.SliceHeader)(unsafe.Pointer(&p))
-	sh.Data = (*reflect.StringHeader)(unsafe.Pointer(&s)).Data
-	sh.Len = len(s)
-	sh.Cap = len(s)
-
-	return
+	return *(*string)(unsafe.Pointer(&b))
 }
 
-// String returns a string that points to the given byte array without a heap allocation.
-// The byte array must be preserved until the string is disposed.
-func String(b []byte) (s string) {
-	if len(b) == 0 {
-		return
+// ByteSlice converts a strings into the equivalent byte slice without doing the
+// actual copy of the data. The slice returned by this function may be read-only.
+// See examples for more details.
+func ByteSlice(s string) []byte {
+	if s == "" {
+		return nil
 	}
 
-	(*reflect.StringHeader)(unsafe.Pointer(&s)).Data = uintptr(unsafe.Pointer(&b[0]))
-	(*reflect.StringHeader)(unsafe.Pointer(&s)).Len = len(b)
-
-	return
+	sh := *(*StringHeader)(unsafe.Pointer(&s))
+	bh := SliceHeader{
+		Data: sh.Data,
+		Len:  sh.Len,
+		Cap:  sh.Len,
+	}
+	return *(*[]byte)(unsafe.Pointer(&bh))
 }
 
 //go:nosplit

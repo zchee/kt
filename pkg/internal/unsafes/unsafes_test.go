@@ -12,7 +12,7 @@ import (
 	"github.com/zchee/kt/pkg/internal/unsafes"
 )
 
-func TestSlice(t *testing.T) {
+func TestByteSlice(t *testing.T) {
 	tests := []struct {
 		name string
 		s    string
@@ -34,7 +34,7 @@ func TestSlice(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			if diff := cmp.Diff(unsafes.Slice(tt.s), tt.want); diff != "" {
+			if diff := cmp.Diff(unsafes.ByteSlice(tt.s), tt.want); diff != "" {
 				t.Errorf("%s: (-got, +want)\n%s", tt.name, diff)
 				return
 			}
