@@ -146,7 +146,7 @@ func (c *Controller) Reconcile(req ctrlreconcile.Request) (result ctrlreconcile.
 			return result, err
 		}
 
-		go func(container corev1.Container, stream iopkg.ReadCloser) {
+		go func(containerName string, stream iopkg.ReadCloser) {
 			defer stream.Close()
 
 			r := bufio.NewReader(stream)
@@ -165,7 +165,7 @@ func (c *Controller) Reconcile(req ctrlreconcile.Request) (result ctrlreconcile.
 				event := &LogEvent{
 					Message:        line,
 					PodName:        pod.Name,
-					ContainerName:  container.Name,
+					ContainerName:  containerName,
 					PodColor:       podColor,
 					ContainerColor: containerColor,
 				}
@@ -182,7 +182,7 @@ func (c *Controller) Reconcile(req ctrlreconcile.Request) (result ctrlreconcile.
 					return
 				}
 			}
-		}(container, stream)
+		}(container.Name, stream)
 	}
 
 	return result, nil
