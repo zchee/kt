@@ -5,7 +5,6 @@ go 1.13
 require (
 	cloud.google.com/go v0.45.1 // indirect
 	github.com/cenkalti/backoff v1.1.1-0.20190506075156-2146c9339422
-	github.com/cespare/xxhash/v2 v2.1.0
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc
 	github.com/go-logr/logr v0.1.1-0.20190903151443-a1ebd699b195
 	github.com/gogo/protobuf v1.3.0 // indirect
@@ -20,11 +19,12 @@ require (
 	github.com/spf13/cobra v0.0.6-0.20190805155617-b80588d523ec
 	github.com/spf13/pflag v1.0.5
 	github.com/zchee/color/v2 v2.0.3
+	github.com/zeebo/xxh3 v0.0.0-20190923153500-83a7230063d0
 	go.opencensus.io v0.22.1
 	go.uber.org/zap v1.10.0
 	golang.org/x/crypto v0.0.0-20190911031432-227b76d455e7 // indirect
 	golang.org/x/net v0.0.0-20190918130420-a8b05e9114ab // indirect
-	golang.org/x/sys v0.0.0-20190916202348-b4ddaad3f8a3 // indirect
+	golang.org/x/sys v0.0.0-20190924154521-2837fb4f24fe // indirect
 	golang.org/x/xerrors v0.0.0-20190717185122-a985d3407aa7
 	google.golang.org/appengine v1.6.2 // indirect
 	k8s.io/api v0.0.0-20190913080256-21721929cffa
