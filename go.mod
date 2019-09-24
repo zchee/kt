@@ -18,13 +18,13 @@ require (
 	github.com/prometheus/common v0.7.0 // indirect
 	github.com/prometheus/procfs v0.0.5 // indirect
 	github.com/spf13/cobra v0.0.6-0.20190805155617-b80588d523ec
-	github.com/spf13/pflag v1.0.4
+	github.com/spf13/pflag v1.0.5
 	github.com/zchee/color/v2 v2.0.3
 	go.opencensus.io v0.22.1
 	go.uber.org/zap v1.10.0
 	golang.org/x/crypto v0.0.0-20190911031432-227b76d455e7 // indirect
 	golang.org/x/net v0.0.0-20190918130420-a8b05e9114ab // indirect
-	golang.org/x/sys v0.0.0-20190916202348-b4ddaad3f8a3
+	golang.org/x/sys v0.0.0-20190916202348-b4ddaad3f8a3 // indirect
 	golang.org/x/xerrors v0.0.0-20190717185122-a985d3407aa7
 	google.golang.org/appengine v1.6.2 // indirect
 	k8s.io/api v0.0.0-20190913080256-21721929cffa
@@ -48,6 +48,3 @@ replace (
 	k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20180731170545-e3762e86a74c // sigs.k8s.io/controller-runtime@v0.2.2
 	k8s.io/utils => k8s.io/utils v0.0.0-20190506122338-8fab8cb257d5 // sigs.k8s.io/controller-runtime@v0.2.2
 )
-
-// workaround for spf13/pflag@e8f29969b682c41a730f8f08b76033b120498464
-replace github.com/spf13/pflag => github.com/spf13/pflag v1.0.4-0.20190814001055-972238283c06
