@@ -5,8 +5,8 @@
 package controller
 
 import (
-	xxhash "github.com/cespare/xxhash/v2"
 	color "github.com/zchee/color/v2"
+	"github.com/zeebo/xxh3"
 )
 
 var colorList = [][2]*color.Color{
@@ -25,9 +25,7 @@ var colorList = [][2]*color.Color{
 }
 
 func findColors(podName string) (podColor, containerColor *color.Color) {
-	digest := xxhash.New()
-	digest.WriteString(podName)
-	idx := digest.Sum64() % uint64(len(colorList))
+	idx := xxh3.HashString(podName) % uint64(len(colorList))
 
 	colors := colorList[idx]
 	return colors[0], colors[1]
