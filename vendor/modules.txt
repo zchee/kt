@@ -13,6 +13,9 @@ github.com/beorn7/perks/quantile
 github.com/cenkalti/backoff
 # github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc
 github.com/davecgh/go-spew/spew
+# github.com/dgraph-io/ristretto v0.0.0-20190928180628-8acd55ed71b0
+github.com/dgraph-io/ristretto
+github.com/dgraph-io/ristretto/z
 # github.com/dgrijalva/jwt-go v0.0.0-20160705203006-01aeca54ebda
 github.com/dgrijalva/jwt-go
 # github.com/evanphx/json-patch v4.5.0+incompatible
