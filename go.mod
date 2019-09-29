@@ -21,6 +21,8 @@ require (
 	github.com/zchee/color/v2 v2.0.3
 	github.com/zeebo/xxh3 v0.0.0-20190923153500-83a7230063d0
 	go.opencensus.io v0.22.1
+	go.uber.org/atomic v1.4.0 // indirect
+	go.uber.org/multierr v1.2.0
 	go.uber.org/zap v1.10.0
 	golang.org/x/crypto v0.0.0-20190911031432-227b76d455e7 // indirect
 	golang.org/x/net v0.0.0-20190918130420-a8b05e9114ab // indirect
