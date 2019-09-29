@@ -33,18 +33,28 @@ linters-settings:
       - asmdecl
       - assign
       - atomic
+      - atomicalign
       - bools
+      - buildssa
       - buildtag
       - cgocall
       - composites
-      - copylocks
+      - copylock
+      - ctrlflow
+      - deepequalerrors
       - errorsas
+      - findcall
+      - goanalysis_metalinter
       - httpresponse
+      - inspect
       - loopclosure
       - lostcancel
       - nilfunc
+      - nilness
+      - pkgfact
       - printf
       - shift
+      - sortslice
       - stdmethods
       - structtag
       - tests
@@ -86,6 +96,7 @@ linters-settings:
 
 linters:
   enable:
+    - bodyclose
     - deadcode
     - depguard
     - dupl
