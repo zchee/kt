@@ -10,45 +10,7 @@ import (
 	"io"
 
 	"github.com/spf13/cobra"
-)
-
-var (
-	completionLong = `
-Output shell completion code for the specified shell (bash or zsh).
-The shell code must be evaluated to provide interactive
-completion of kt commands.  This can be done by sourcing it from
-the .bash_profile.
-
-Note for zsh users: [1] zsh completions are only supported in versions of zsh >= 5.2`
-
-	completionExample = `
-# Installing bash completion on macOS using homebrew
-## If running Bash 3.2 included with macOS
-    brew install bash-completion
-## or, if running Bash 4.1+
-    brew install bash-completion@2
-## If kt is installed via homebrew, this should start working immediately.
-## If you've installed via other means, you may need add the completion to your completion directory
-    kt completion bash > $(brew --prefix)/etc/bash_completion.d/kt
-
-
-# Installing bash completion on Linux
-## If bash-completion is not installed on Linux, please install the 'bash-completion' package
-## via your distribution's package manager.
-## Load the kt completion code for bash into the current shell
-    source <(kt completion bash)
-## Write bash completion code to a file and source if from .bash_profile
-    kt completion bash > ~/.kube/completion.kt.bash.inc
-    printf "
-      # kt shell completion
-      source '$HOME/.kube/completion.kt.bash.inc'
-      " >> $HOME/.bash_profile
-    source $HOME/.bash_profile
-
-# Load the kt completion code for zsh[1] into the current shell
-    source <(kt completion zsh)
-# Set the kt completion code for zsh[1] to autoload on startup
-    kt completion zsh > "${fpath[1]}/_kt"`
+	"go.uber.org/multierr"
 )
 
 var (
@@ -57,31 +19,6 @@ var (
 		"zsh":  runCompletionZsh,
 	}
 )
-
-// NewCmdCompletion creates the `completion` command.
-// func NewCmdCompletion(_ context.Context, out io.Writer, boilerPlate string) *cobra.Command {
-// 	shells := []string{}
-// 	for s := range completionShells {
-// 		shells = append(shells, s)
-// 	}
-//
-// 	cmd := &cobra.Command{
-// 		Use:                   "completion SHELL",
-// 		DisableFlagsInUseLine: true,
-// 		Short:                 "Output shell completion code for the specified shell (bash or zsh)",
-// 		Long:                  completionLong,
-// 		Example:               completionExample,
-// 		Run: func(cmd *cobra.Command, args []string) {
-// 			if err := RunCompletion(out, boilerPlate, cmd, args); err != nil {
-// 				fmt.Fprintln(os.Stderr, err)
-// 				os.Exit(1)
-// 			}
-// 		},
-// 		ValidArgs: shells,
-// 	}
-//
-// 	return cmd
-// }
 
 func UsageErrorf(cmd *cobra.Command, format string, args ...interface{}) error {
 	msg := fmt.Sprintf(format, args...)
@@ -106,16 +43,9 @@ func runCompletionBash(out io.Writer, boilerPlate string, cmd *cobra.Command) er
 	return cmd.GenBashCompletion(out)
 }
 
-func runCompletionZsh(out io.Writer, boilerPlate string, cmd *cobra.Command) error {
-	zshHead := "#compdef kt\n"
-
-	out.Write([]byte(zshHead))
-
-	if _, err := out.Write([]byte(boilerPlate)); err != nil {
-		return err
-	}
-
-	zshInitialization := `
+const (
+	zshHead           = "#compdef kt\n"
+	zshInitialization = `
 __kt_bash_source() {
 	alias shopt=':'
 	alias _expand=_bash_expand
@@ -257,19 +187,41 @@ __kt_convert_bash_to_zsh() {
 	-e "s/\\\$(type${RWORD}/\$(__kt_type/g" \
 	<<'BASH_COMPLETION_EOF'
 `
-	out.Write([]byte(zshInitialization))
 
-	buf := new(bytes.Buffer)
-	cmd.GenBashCompletion(buf)
-	out.Write(buf.Bytes())
-
-	zshTail := `
+	zshTail = `
 BASH_COMPLETION_EOF
 }
 
 __kt_bash_source <(__kt_convert_bash_to_zsh)
 _complete kt 2>/dev/null
 `
-	out.Write([]byte(zshTail))
-	return nil
+)
+
+func runCompletionZsh(out io.Writer, boilerPlate string, cmd *cobra.Command) (errs error) {
+	buf := new(bytes.Buffer)
+
+	_, err := buf.WriteString(zshHead)
+	errs = multierr.Append(errs, err)
+
+	_, err = buf.WriteString(zshHead)
+	errs = multierr.Append(errs, err)
+
+	if boilerPlate != "" {
+		_, err = buf.WriteString(boilerPlate)
+		errs = multierr.Append(errs, err)
+	}
+
+	_, err = buf.WriteString(zshInitialization)
+	errs = multierr.Append(errs, err)
+
+	err = cmd.GenBashCompletion(buf)
+	errs = multierr.Append(errs, err)
+
+	_, err = buf.WriteString(zshTail)
+	errs = multierr.Append(errs, err)
+
+	_, err = out.Write(buf.Bytes())
+	errs = multierr.Append(errs, err)
+
+	return multierr.Combine(errs)
 }
