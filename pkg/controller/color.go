@@ -24,9 +24,14 @@ var colorList = [][2]*color.Color{
 	{color.New(color.FgHiRed, color.Faint), color.New(color.FgRed, color.Faint)},
 }
 
-func findColors(podName string) (podColor, containerColor *color.Color) {
+func findColors(podName string, attrs ...color.Attribute) (podColor, containerColor *color.Color) {
 	idx := xxh3.HashString(podName) % uint64(len(colorList))
 
 	colors := colorList[idx]
+	if len(attrs) > 0 {
+		colors[0].Add(attrs...)
+		colors[1].Add(attrs...)
+	}
+
 	return colors[0], colors[1]
 }
