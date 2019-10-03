@@ -26,11 +26,11 @@ const (
 )
 
 const (
-	createMark = "+"
-	deleteMark = "-"
+	createPodMark                 = "+"
+	createPodAttr color.Attribute = color.FgHiGreen + color.Bold
 
-	createAttr color.Attribute = color.FgHiGreen + color.Bold
-	deleteAttr color.Attribute = color.FgHiRed + color.Bold
+	deletePodMark                 = "-"
+	deletePodAttr color.Attribute = color.FgHiRed + color.Bold
 )
 
 // PredicateEventFilter filters events before they are provided to handler.EventHandlers.
@@ -62,16 +62,21 @@ func (e *PredicateEventFilter) filterQuery(state corev1.ContainerStatus) bool {
 }
 
 func (e *PredicateEventFilter) printFunc(marker string, pod *corev1.Pod, container corev1.Container) {
-	var attr color.Attribute
+	var (
+		attr color.Attribute
+		p, c *color.Color
+	)
+
 	switch marker {
-	case createMark:
-		attr = createAttr
-	case deleteMark:
-		attr = deleteAttr
+	case createPodMark:
+		attr = createPodAttr
+		p, c = findColors(pod.Name)
+	case deletePodMark:
+		attr = deletePodAttr
+		p, c = findColors(pod.Name, color.CrossedOut)
 	}
 
 	mark := color.New(attr).SprintFunc()
-	p, c := findColors(pod.Name)
 
 	format := nonNamespaceFmt
 	args := []interface{}{mark(marker), p.SprintfFunc()(pod.Name), c.SprintfFunc()(container.Name)}
@@ -100,7 +105,7 @@ func (e *PredicateEventFilter) Create(event ctrlevent.CreateEvent) bool {
 		}
 
 		if s.State.Running != nil {
-			e.printFunc(createMark, pod, pod.Spec.InitContainers[i])
+			e.printFunc(createPodMark, pod, pod.Spec.InitContainers[i])
 		}
 	}
 	for i, s := range pod.Status.ContainerStatuses {
@@ -109,7 +114,7 @@ func (e *PredicateEventFilter) Create(event ctrlevent.CreateEvent) bool {
 		}
 
 		if s.State.Running != nil {
-			e.printFunc(createMark, pod, pod.Spec.Containers[i])
+			e.printFunc(createPodMark, pod, pod.Spec.Containers[i])
 		}
 	}
 
@@ -126,12 +131,12 @@ func (e *PredicateEventFilter) Delete(event ctrlevent.DeleteEvent) bool {
 
 	for i, s := range pod.Status.InitContainerStatuses {
 		if s.State.Terminated != nil {
-			e.printFunc(deleteMark, pod, pod.Spec.InitContainers[i])
+			e.printFunc(deletePodMark, pod, pod.Spec.InitContainers[i])
 		}
 	}
 	for i, s := range pod.Status.ContainerStatuses {
 		if s.State.Terminated != nil {
-			e.printFunc(deleteMark, pod, pod.Spec.Containers[i])
+			e.printFunc(deletePodMark, pod, pod.Spec.Containers[i])
 		}
 	}
 
