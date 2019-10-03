@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/dgraph-io/ristretto"
 	"github.com/go-logr/logr"
 	color "github.com/zchee/color/v2"
 
@@ -38,7 +39,7 @@ type PredicateEventFilter struct {
 	ioStreams    io.Streams
 	ioMu         sync.Mutex
 	log          logr.Logger
-	states       *sync.Map
+	state        *ristretto.Cache
 	isNamespaced bool
 	query        *options.Query
 }

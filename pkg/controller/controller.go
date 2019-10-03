@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff"
+	"github.com/dgraph-io/ristretto"
 	"github.com/go-logr/logr"
 	"go.uber.org/zap"
 	errors "golang.org/x/xerrors"
@@ -62,10 +63,17 @@ func New(ctx context.Context, ioStreams io.Streams, mgr ctrlmanager.Manager, opt
 
 	ctrllog.SetLogger(log)
 
-	state := new(sync.Map)
+	state, err := ristretto.NewCache(&ristretto.Config{
+		NumCounters: 1e6,
+		MaxCost:     1 << 20,
+		BufferItems: 64,
+	})
+	if err != nil {
+		return nil, errors.Errorf("failed to create state cache: %w", err)
+	}
 	predicateFilter := &PredicateEventFilter{
 		ioStreams:    ioStreams,
-		states:       state,
+		state:        state,
 		log:          log.WithName("predicate"),
 		isNamespaced: (opts.AllNamespaces || len(opts.Namespaces) > 0),
 		query:        opts.Query,
