@@ -14,6 +14,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
+// Options represents a filtered log options.
 type Options struct {
 	// global filters
 	Exclude []string
@@ -44,14 +45,27 @@ type Options struct {
 	Query *Query
 }
 
+// Query represents a filtered log regexp queries.
+type Query struct {
+	PodQuery              *regexp.Regexp
+	ContainerState        ContainerState
+	ContainerQuery        *regexp.Regexp
+	ExcludeContainerQuery *regexp.Regexp
+	ExcludeQuery          []*regexp.Regexp
+	IncludeQuery          []*regexp.Regexp
+}
+
+// ContainerState represents a stete of container.
 type ContainerState string
 
+// State of container.
 const (
-	Running    = "running"
-	Waiting    = "waiting"
-	Terminated = "terminated"
+	Running    = "running"    // container is running
+	Waiting    = "waiting"    // container is waiting
+	Terminated = "terminated" // container is terminated
 )
 
+// NewContainerState returns the ContainerState from state.
 func NewContainerState(state string) (ContainerState, error) {
 	switch state {
 	case Running:
@@ -65,24 +79,16 @@ func NewContainerState(state string) (ContainerState, error) {
 	return "", errors.New("containerState should be one of 'running', 'waiting', or 'terminated'")
 }
 
-func (cs ContainerState) Match(cState corev1.ContainerState) bool {
+// Match returns whether the match state to cs.
+func (cs ContainerState) Match(state corev1.ContainerState) bool {
 	switch cs {
 	case Running:
-		return cState.Running != nil
+		return state.Running != nil
 	case Waiting:
-		return cState.Waiting != nil
+		return state.Waiting != nil
 	case Terminated:
-		return cState.Terminated != nil
+		return state.Terminated != nil
 	default:
 		return false
 	}
-}
-
-type Query struct {
-	PodQuery              *regexp.Regexp
-	ContainerState        ContainerState
-	ContainerQuery        *regexp.Regexp
-	ExcludeContainerQuery *regexp.Regexp
-	ExcludeQuery          []*regexp.Regexp
-	IncludeQuery          []*regexp.Regexp
 }
