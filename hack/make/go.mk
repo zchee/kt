@@ -20,7 +20,7 @@ endif
 CGO_ENABLED ?= 0
 GO_GCFLAGS=
 GO_LDFLAGS=-s -w
-GO_LDFLAGS_STATIC=-s -w '-extldflags=-static'
+GO_LDFLAGS_STATIC=-s -w '-extldflags=-fno-PIC -static'
 
 GO_BUILDTAGS=osusergo netgo
 GO_BUILDTAGS_STATIC=static static_build
