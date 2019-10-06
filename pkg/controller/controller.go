@@ -58,9 +58,7 @@ type Controller struct {
 // compile time check whether the Controller implements ctrlreconciler.Reconciler interface.
 var _ ctrlreconcile.Reconciler = (*Controller)(nil)
 
-const (
-	numWorker = 128
-)
+const numWorker = 128
 
 // New returns the new Controller registered with the manager.Manager.
 func New(ctx context.Context, ioStreams io.Streams, mgr ctrlmanager.Manager, opts *options.Options) (c *Controller, err error) {
