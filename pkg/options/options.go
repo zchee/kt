@@ -60,14 +60,14 @@ type ContainerState string
 
 // State of container.
 const (
-	Running    = "running"    // container is running
-	Waiting    = "waiting"    // container is waiting
-	Terminated = "terminated" // container is terminated
+	Running    ContainerState = "running"    // container is running
+	Waiting    ContainerState = "waiting"    // container is waiting
+	Terminated ContainerState = "terminated" // container is terminated
 )
 
 // NewContainerState returns the ContainerState from state.
 func NewContainerState(state string) (ContainerState, error) {
-	switch state {
+	switch ContainerState(state) {
 	case Running:
 		return Running, nil
 	case Waiting:
