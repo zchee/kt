@@ -55,6 +55,7 @@ type Controller struct {
 	opts      *options.Options
 }
 
+// compile time check whether the Controller implements ctrlreconciler.Reconciler interface.
 var _ ctrlreconcile.Reconciler = (*Controller)(nil)
 
 const (
