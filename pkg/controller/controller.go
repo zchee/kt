@@ -33,10 +33,14 @@ import (
 	"github.com/zchee/kt/pkg/internal/unsafes"
 	"github.com/zchee/kt/pkg/io"
 	"github.com/zchee/kt/pkg/options"
+	"github.com/zchee/kt/pkg/pool"
 )
 
-// Controller implements a reconcile.Reconciler.
+// Controller represents a tail Kubernetes resource logs.
+//
+// Implements a reconcile.Reconciler.
 type Controller struct {
+	// controller-runtime
 	client     ctrlclient.Client
 	controller ctrlcontroller.Controller
 	clientset  kubernetes.Interface
@@ -44,13 +48,18 @@ type Controller struct {
 	predicate  ctrlpredicate.Predicate
 	log        logr.Logger
 
-	ctx       context.Context
+	ctx       context.Context // for implements ctrlreconcile.Reconciler
+	gp        *pool.GoroutinePool
 	ioStreams io.Streams
-	ioMu      sync.Mutex
+	ioMu      sync.Mutex // mutex lock of ioStreams
 	opts      *options.Options
 }
 
 var _ ctrlreconcile.Reconciler = (*Controller)(nil)
+
+const (
+	numWorker = 128
+)
 
 // New returns the new Controller registered with the manager.Manager.
 func New(ctx context.Context, ioStreams io.Streams, mgr ctrlmanager.Manager, opts *options.Options) (c *Controller, err error) {
@@ -85,9 +94,11 @@ func New(ctx context.Context, ioStreams io.Streams, mgr ctrlmanager.Manager, opt
 		predicate: predicateFilter,
 		log:       log,
 		ctx:       ctx,
+		gp:        pool.NewGoroutinePool(numWorker, false),
 		ioStreams: ioStreams,
 		opts:      opts,
 	}
+	c.gp.AddWorkers(numWorker)
 
 	c.clientset, err = kubernetes.NewForConfig(mgr.GetConfig())
 	if err != nil {
@@ -102,9 +113,7 @@ func New(ctx context.Context, ioStreams io.Streams, mgr ctrlmanager.Manager, opt
 	return c, nil
 }
 
-const (
-	lineDelim = '\n'
-)
+const lineDelim = '\n'
 
 // Reconcile implements a ctrlreconcile.Reconciler.
 func (c *Controller) Reconcile(req ctrlreconcile.Request) (result ctrlreconcile.Result, err error) {
@@ -154,7 +163,8 @@ func (c *Controller) Reconcile(req ctrlreconcile.Request) (result ctrlreconcile.
 			return result, err
 		}
 
-		go func(containerName string, stream iopkg.ReadCloser) {
+		c.gp.ScheduleWork(func(v interface{}) {
+			stream := v.(iopkg.ReadCloser)
 			defer stream.Close()
 
 			r := bufio.NewReader(stream)
@@ -173,7 +183,7 @@ func (c *Controller) Reconcile(req ctrlreconcile.Request) (result ctrlreconcile.
 				event := &LogEvent{
 					Message:        line,
 					PodName:        pod.Name,
-					ContainerName:  containerName,
+					ContainerName:  container.Name,
 					PodColor:       podColor,
 					ContainerColor: containerColor,
 				}
@@ -181,16 +191,14 @@ func (c *Controller) Reconcile(req ctrlreconcile.Request) (result ctrlreconcile.
 					event.Namespace = pod.Namespace
 				}
 
-				// TODO(zchee): use goroutine
 				c.ioMu.Lock()
-				err = c.opts.Template.Execute(c.ioStreams.Out, event)
-				c.ioMu.Unlock()
-				if err != nil {
+				if err = c.opts.Template.Execute(c.ioStreams.Out, event); err != nil {
 					c.log.Error(err, "failed to tmpl.Execute", "event", event)
 					return
 				}
+				c.ioMu.Unlock()
 			}
-		}(container.Name, stream)
+		}, stream)
 	}
 
 	return result, nil
@@ -209,6 +217,11 @@ func (c *Controller) SetupWithManager(mgr ctrlmanager.Manager) (err error) {
 	}
 
 	return nil
+}
+
+// Close closes the goroutine pool.
+func (c *Controller) Close() {
+	_ = c.gp.Close()
 }
 
 func trimSpace(s string) string {

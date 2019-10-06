@@ -240,6 +240,7 @@ func NewKTCommand(in iopkg.Reader, out, errOut iopkg.Writer) *cobra.Command {
 		if err != nil {
 			return errors.Errorf("failed to create controller: %w", err)
 		}
+		defer kt.ctrl.Close()
 
 		return kt.RunTail(ctx)
 	}
