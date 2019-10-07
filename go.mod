@@ -12,6 +12,7 @@ require (
 	github.com/google/go-cmp v0.3.2-0.20190829225427-b1c9c4891a65
 	github.com/hashicorp/golang-lru v0.5.3 // indirect
 	github.com/imdario/mergo v0.3.7 // indirect
+	github.com/panjf2000/ants/v2 v2.1.2-0.20191007125323-617c89699a34
 	github.com/prometheus/client_golang v1.1.0 // indirect
 	github.com/prometheus/client_model v0.0.0-20190812154241-14fe0d1b01d4 // indirect
 	github.com/prometheus/common v0.7.0 // indirect
