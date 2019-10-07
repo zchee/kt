@@ -146,15 +146,15 @@ func (e *PredicateEventFilter) Delete(event ctrlevent.DeleteEvent) bool {
 
 // Update implements predicate.Predicate.
 func (e *PredicateEventFilter) Update(event ctrlevent.UpdateEvent) bool {
-	// podOld := event.ObjectOld.(*corev1.Pod)
-	// if !e.query.PodQuery.MatchString(podOld.Name) {
-	// 	return false // skip if not matched PodQuery
-	// }
-	//
-	// podNew := event.ObjectNew.(*corev1.Pod)
-	// if !e.query.PodQuery.MatchString(podNew.Name) {
-	// 	return false // skip if not matched PodQuery
-	// }
+	podOld := event.ObjectOld.(*corev1.Pod)
+	if !e.query.PodQuery.MatchString(podOld.Name) {
+		return false // skip if not matched PodQuery
+	}
+
+	podNew := event.ObjectNew.(*corev1.Pod)
+	if !e.query.PodQuery.MatchString(podNew.Name) {
+		return false // skip if not matched PodQuery
+	}
 
 	return true
 }
