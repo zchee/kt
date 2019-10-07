@@ -74,7 +74,7 @@ func NewKTCommand(in iopkg.Reader, out, errOut iopkg.Writer) *cobra.Command {
 		Container:      ".*",
 		ContainerState: "running",
 		Since:          48 * time.Hour,
-		Concurrency:    5,
+		Concurrency:    10,
 		UseColor:       "auto",
 		Format:         "",
 		Output:         "default",
