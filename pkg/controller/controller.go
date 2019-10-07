@@ -98,7 +98,7 @@ func New(ctx context.Context, ioStreams io.Streams, mgr ctrlmanager.Manager, opt
 		opts:      opts,
 	}
 
-	gp, err := ants.NewPoolWithFunc(numWorkers, c.ReadStream)
+	gp, err := ants.NewPoolWithFunc(numWorkers, c.ReadStream, ants.WithNonblocking(true), ants.WithPreAlloc(true))
 	if err != nil {
 		return nil, errors.Errorf("failed to create goroutine pool: %w", err)
 	}
