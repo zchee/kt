@@ -15,6 +15,8 @@ import (
 	"github.com/cenkalti/backoff"
 	"github.com/dgraph-io/ristretto"
 	"github.com/go-logr/logr"
+	ants "github.com/panjf2000/ants/v2"
+	color "github.com/zchee/color/v2"
 	"go.uber.org/zap"
 	errors "golang.org/x/xerrors"
 
@@ -33,7 +35,6 @@ import (
 	"github.com/zchee/kt/pkg/internal/unsafes"
 	"github.com/zchee/kt/pkg/io"
 	"github.com/zchee/kt/pkg/options"
-	"github.com/zchee/kt/pkg/pool"
 )
 
 // Controller represents a tail Kubernetes resource logs.
@@ -49,7 +50,7 @@ type Controller struct {
 	log        logr.Logger
 
 	ctx       context.Context // for implements ctrlreconcile.Reconciler
-	gp        *pool.GoroutinePool
+	gp        *ants.PoolWithFunc
 	ioStreams io.Streams
 	ioMu      sync.Mutex // mutex lock of ioStreams
 	opts      *options.Options
@@ -58,7 +59,7 @@ type Controller struct {
 // compile time check whether the Controller implements ctrlreconciler.Reconciler interface.
 var _ ctrlreconcile.Reconciler = (*Controller)(nil)
 
-const numWorker = 128
+const numWorkers = 64
 
 // New returns the new Controller registered with the manager.Manager.
 func New(ctx context.Context, ioStreams io.Streams, mgr ctrlmanager.Manager, opts *options.Options) (c *Controller, err error) {
@@ -93,11 +94,15 @@ func New(ctx context.Context, ioStreams io.Streams, mgr ctrlmanager.Manager, opt
 		predicate: predicateFilter,
 		log:       log,
 		ctx:       ctx,
-		gp:        pool.NewGoroutinePool(numWorker, false),
 		ioStreams: ioStreams,
 		opts:      opts,
 	}
-	c.gp.AddWorkers(numWorker)
+
+	gp, err := ants.NewPoolWithFunc(numWorkers, c.ReadStream)
+	if err != nil {
+		return nil, errors.Errorf("failed to create goroutine pool: %w", err)
+	}
+	c.gp = gp
 
 	c.clientset, err = kubernetes.NewForConfig(mgr.GetConfig())
 	if err != nil {
@@ -162,45 +167,63 @@ func (c *Controller) Reconcile(req ctrlreconcile.Request) (result ctrlreconcile.
 			return result, err
 		}
 
-		c.gp.ScheduleWork(func(v interface{}) {
-			stream := v.(iopkg.ReadCloser)
-			defer stream.Close()
-
-			r := bufio.NewReader(stream)
-			for {
-				l, err := r.ReadBytes(lineDelim)
-				if err != nil {
-					if errors.Is(err, iopkg.EOF) {
-						stream.Close()
-						return
-					}
-					c.log.Error(err, "failed to ReadBytes")
-					return
-				}
-				line := trimSpace(unsafes.String(l))
-
-				event := &LogEvent{
-					Message:        line,
-					PodName:        pod.Name,
-					ContainerName:  container.Name,
-					PodColor:       podColor,
-					ContainerColor: containerColor,
-				}
-				if c.opts.AllNamespaces || len(c.opts.Namespaces) > 0 {
-					event.Namespace = pod.Namespace
-				}
-
-				c.ioMu.Lock()
-				if err = c.opts.Template.Execute(c.ioStreams.Out, event); err != nil {
-					c.log.Error(err, "failed to tmpl.Execute", "event", event)
-					return
-				}
-				c.ioMu.Unlock()
-			}
-		}, stream)
+		c.gp.Invoke(&eventStream{
+			stream:         stream,
+			podName:        pod.Name,
+			containerName:  container.Name,
+			namespace:      pod.Namespace,
+			podColor:       podColor,
+			containerColor: containerColor,
+		})
 	}
 
 	return result, nil
+}
+
+type eventStream struct {
+	stream         iopkg.ReadCloser
+	podName        string
+	containerName  string
+	namespace      string
+	podColor       *color.Color
+	containerColor *color.Color
+}
+
+func (c *Controller) ReadStream(v interface{}) {
+	ev := v.(*eventStream)
+	defer ev.stream.Close()
+
+	r := bufio.NewReader(ev.stream)
+	for {
+		l, err := r.ReadBytes(lineDelim)
+		if err != nil {
+			if errors.Is(err, iopkg.EOF) {
+				ev.stream.Close()
+				return
+			}
+			c.log.Error(err, "failed to ReadBytes")
+			return
+		}
+		line := trimSpace(unsafes.String(l))
+
+		event := &LogEvent{
+			Message:        line,
+			PodName:        ev.podName,
+			ContainerName:  ev.containerName,
+			PodColor:       ev.podColor,
+			ContainerColor: ev.containerColor,
+		}
+		if c.opts.AllNamespaces || len(c.opts.Namespaces) > 0 {
+			event.Namespace = ev.namespace
+		}
+
+		c.ioMu.Lock()
+		if err = c.opts.Template.Execute(c.ioStreams.Out, event); err != nil {
+			c.log.Error(err, "failed to tmpl.Execute", "event", event)
+			return
+		}
+		c.ioMu.Unlock()
+	}
 }
 
 // SetupWithManager setups the Controller with manager.Manager.
@@ -220,7 +243,7 @@ func (c *Controller) SetupWithManager(mgr ctrlmanager.Manager) (err error) {
 
 // Close closes the goroutine pool.
 func (c *Controller) Close() {
-	_ = c.gp.Close()
+	c.gp.Release()
 }
 
 func trimSpace(s string) string {
