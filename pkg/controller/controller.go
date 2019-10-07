@@ -16,7 +16,6 @@ import (
 	"github.com/dgraph-io/ristretto"
 	"github.com/go-logr/logr"
 	ants "github.com/panjf2000/ants/v2"
-	color "github.com/zchee/color/v2"
 	"go.uber.org/zap"
 	errors "golang.org/x/xerrors"
 
@@ -168,12 +167,14 @@ func (c *Controller) Reconcile(req ctrlreconcile.Request) (result ctrlreconcile.
 		}
 
 		c.gp.Invoke(&eventStream{
-			stream:         stream,
-			podName:        pod.Name,
-			containerName:  container.Name,
-			namespace:      pod.Namespace,
-			podColor:       podColor,
-			containerColor: containerColor,
+			stream: stream,
+			LogEvent: LogEvent{
+				PodName:        pod.Name,
+				ContainerName:  container.Name,
+				Namespace:      pod.Namespace,
+				PodColor:       podColor,
+				ContainerColor: containerColor,
+			},
 		})
 	}
 
@@ -181,24 +182,19 @@ func (c *Controller) Reconcile(req ctrlreconcile.Request) (result ctrlreconcile.
 }
 
 type eventStream struct {
-	stream         iopkg.ReadCloser
-	podName        string
-	containerName  string
-	namespace      string
-	podColor       *color.Color
-	containerColor *color.Color
+	stream iopkg.ReadCloser
+	LogEvent
 }
 
 func (c *Controller) ReadStream(v interface{}) {
-	ev := v.(*eventStream)
-	defer ev.stream.Close()
+	es := v.(*eventStream)
+	defer es.stream.Close()
 
-	r := bufio.NewReader(ev.stream)
+	r := bufio.NewReader(es.stream)
 	for {
 		l, err := r.ReadBytes(lineDelim)
 		if err != nil {
 			if errors.Is(err, iopkg.EOF) {
-				ev.stream.Close()
 				return
 			}
 			c.log.Error(err, "failed to ReadBytes")
@@ -206,15 +202,10 @@ func (c *Controller) ReadStream(v interface{}) {
 		}
 		line := trimSpace(unsafes.String(l))
 
-		event := &LogEvent{
-			Message:        line,
-			PodName:        ev.podName,
-			ContainerName:  ev.containerName,
-			PodColor:       ev.podColor,
-			ContainerColor: ev.containerColor,
-		}
-		if c.opts.AllNamespaces || len(c.opts.Namespaces) > 0 {
-			event.Namespace = ev.namespace
+		event := es.LogEvent
+		event.Message = line
+		if !c.opts.AllNamespaces && !(len(c.opts.Namespaces) > 0) {
+			event.Namespace = "" // remove Namespace
 		}
 
 		c.ioMu.Lock()
