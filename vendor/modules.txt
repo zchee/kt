@@ -27,7 +27,7 @@ github.com/go-logr/zapr
 # github.com/gogo/protobuf v1.3.0
 github.com/gogo/protobuf/proto
 github.com/gogo/protobuf/sortkeys
-# github.com/golang/groupcache v0.0.0-20190702054246-869f871628b6
+# github.com/golang/groupcache v0.0.0-20191002201903-404acd9df4cc
 github.com/golang/groupcache/lru
 # github.com/golang/protobuf v1.3.2
 github.com/golang/protobuf/proto
@@ -103,7 +103,7 @@ github.com/spf13/pflag
 github.com/zchee/color/v2
 # github.com/zeebo/xxh3 v0.0.0-20190923153500-83a7230063d0
 github.com/zeebo/xxh3
-# go.opencensus.io v0.22.1
+# go.opencensus.io v0.22.2-0.20191001044506-fa651b05963c
 go.opencensus.io
 go.opencensus.io/internal
 go.opencensus.io/internal/tagencoding
