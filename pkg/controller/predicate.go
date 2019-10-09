@@ -31,7 +31,7 @@ const (
 	createPodAttr color.Attribute = color.FgHiGreen + color.Bold
 
 	deletePodMark                 = "-"
-	deletePodAttr color.Attribute = color.FgHiRed + color.Bold
+	deletePodAttr color.Attribute = color.FgHiRed + color.Bold + color.Concealed
 )
 
 // PredicateEventFilter filters events before they are provided to handler.EventHandlers.
@@ -74,7 +74,6 @@ func (e *PredicateEventFilter) printFunc(marker string, pod *corev1.Pod, contain
 		p, c = findColors(pod.Name)
 	case deletePodMark:
 		attr = deletePodAttr
-		p, c = findColors(pod.Name, color.CrossedOut)
 	}
 
 	mark := color.New(attr).SprintFunc()
