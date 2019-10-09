@@ -9,6 +9,7 @@ require (
 	github.com/dgraph-io/ristretto v0.0.0-20190928180628-8acd55ed71b0
 	github.com/go-logr/logr v0.1.1-0.20190903151443-a1ebd699b195
 	github.com/gogo/protobuf v1.3.0 // indirect
+	github.com/golang/groupcache v0.0.0-20191002201903-404acd9df4cc // indirect
 	github.com/google/go-cmp v0.3.2-0.20190829225427-b1c9c4891a65
 	github.com/hashicorp/golang-lru v0.5.3 // indirect
 	github.com/imdario/mergo v0.3.7 // indirect
@@ -21,7 +22,7 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/zchee/color/v2 v2.0.3
 	github.com/zeebo/xxh3 v0.0.0-20190923153500-83a7230063d0
-	go.opencensus.io v0.22.1
+	go.opencensus.io v0.22.2-0.20191001044506-fa651b05963c
 	go.uber.org/atomic v1.4.0 // indirect
 	go.uber.org/multierr v1.2.0
 	go.uber.org/zap v1.10.0
