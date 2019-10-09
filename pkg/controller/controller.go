@@ -116,6 +116,21 @@ func New(ctx context.Context, ioStreams io.Streams, mgr ctrlmanager.Manager, opt
 	return c, nil
 }
 
+// SetupWithManager setups the Controller with manager.Manager.
+func (c *Controller) SetupWithManager(mgr ctrlmanager.Manager) (err error) {
+	ctrlOpts := ctrlcontroller.Options{
+		Reconciler:              c,
+		MaxConcurrentReconciles: c.opts.Concurrency,
+	}
+
+	c.controller, err = ctrlbuilder.ControllerManagedBy(mgr).For(&corev1.Pod{}).WithEventFilter(c.predicate).WithOptions(ctrlOpts).Build(c)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 const lineDelim = '\n'
 
 // Reconcile implements a ctrlreconcile.Reconciler.
@@ -215,21 +230,6 @@ func (c *Controller) ReadStream(v interface{}) {
 		}
 		c.ioMu.Unlock()
 	}
-}
-
-// SetupWithManager setups the Controller with manager.Manager.
-func (c *Controller) SetupWithManager(mgr ctrlmanager.Manager) (err error) {
-	ctrlOpts := ctrlcontroller.Options{
-		Reconciler:              c,
-		MaxConcurrentReconciles: c.opts.Concurrency,
-	}
-
-	c.controller, err = ctrlbuilder.ControllerManagedBy(mgr).For(&corev1.Pod{}).WithEventFilter(c.predicate).WithOptions(ctrlOpts).Build(c)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 // Close closes the goroutine pool.
