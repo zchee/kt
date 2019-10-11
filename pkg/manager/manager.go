@@ -34,17 +34,15 @@ func New(config *rest.Config, mgrOpts ctrlmanager.Options) (*Manager, error) {
 	logger := ctrlzap.New(func(o *ctrlzap.Options) {
 		o.Level = &lvl
 		o.Development = true
-	})
+	}).WithName("manager")
 	ctrllog.SetLogger(logger)
-
-	mgrLog := logger.WithName("manager")
 
 	mgrOpts.Scheme = scheme
 	mgrOpts.MetricsBindAddress = "0" // force disable the metrics serving
 
 	mgr, err := ctrlmanager.New(config, mgrOpts)
 	if err != nil {
-		mgrLog.Error(err, "failed to create manager")
+		logger.Error(err, "failed to create manager")
 		return nil, err
 	}
 
