@@ -32,15 +32,14 @@ require (
 	golang.org/x/xerrors v0.0.0-20190717185122-a985d3407aa7
 	google.golang.org/appengine v1.6.2 // indirect
 	k8s.io/api v0.0.0-20191003000013-35e20aa79eb8
-	k8s.io/apiextensions-apiserver v0.0.0-20190918080820-40952ff8d5b6 // indirect
 	k8s.io/apimachinery v0.0.0-20190913080033-27d36303b655
 	k8s.io/client-go v11.0.1-0.20190409021438-1a26190bd76a+incompatible
-	sigs.k8s.io/controller-runtime v0.2.2
+	sigs.k8s.io/controller-runtime v0.3.0
 )
 
 replace (
 	k8s.io/client-go => k8s.io/client-go v0.0.0-20190918200256-06eb1244587a // kubernetes-1.15.4
-	sigs.k8s.io/controller-runtime => sigs.k8s.io/controller-runtime v0.2.2
+	sigs.k8s.io/controller-runtime => sigs.k8s.io/controller-runtime v0.3.0
 )
 
 replace (
