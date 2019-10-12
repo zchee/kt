@@ -31,21 +31,21 @@ require (
 	golang.org/x/sys v0.0.0-20191007154456-ef33b2fb2c41 // indirect
 	golang.org/x/xerrors v0.0.0-20190717185122-a985d3407aa7
 	google.golang.org/appengine v1.6.2 // indirect
-	k8s.io/api v0.0.0-20191003000013-35e20aa79eb8
-	k8s.io/apimachinery v0.0.0-20190913080033-27d36303b655
-	k8s.io/client-go v11.0.1-0.20190409021438-1a26190bd76a+incompatible
+	k8s.io/api v0.0.0-20190918195907-bd6ac527cfd2
+	k8s.io/apimachinery v0.0.0-20190817020851-f2f3a405f61d
+	k8s.io/client-go v0.0.0-20190918200256-06eb1244587a
 	sigs.k8s.io/controller-runtime v0.3.0
 )
 
 replace (
-	k8s.io/client-go => k8s.io/client-go v0.0.0-20190918200256-06eb1244587a // kubernetes-1.15.4
+	k8s.io/client-go => k8s.io/client-go v0.0.0-20190918200256-06eb1244587a // k8s.io/client-go@kubernetes-1.15.4
 	sigs.k8s.io/controller-runtime => sigs.k8s.io/controller-runtime v0.3.0
 )
 
 replace (
-	k8s.io/api => k8s.io/api v0.0.0-20190918195907-bd6ac527cfd2 // kubernetes-1.15.4
-	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.0.0-20190409022649-727a075fdec8 // sigs.k8s.io/controller-runtime@v0.2.2
-	k8s.io/apimachinery => k8s.io/apimachinery v0.0.0-20190817020851-f2f3a405f61d // kubernetes-1.15.4
-	k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20190228160746-b3a7cee44a30 // kubernetes-1.15.4
-	k8s.io/utils => k8s.io/utils v0.0.0-20190221042446-c2654d5206da // kubernetes-1.15.4
+	k8s.io/api => k8s.io/api v0.0.0-20190918195907-bd6ac527cfd2 // k8s.io/client-go@kubernetes-1.15.4
+	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.0.0-20190918201827-3de75813f604 // k8s.io/client-go@kubernetes-1.15.4
+	k8s.io/apimachinery => k8s.io/apimachinery v0.0.0-20190817020851-f2f3a405f61d // k8s.io/client-go@kubernetes-1.15.4
+	k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20190918143330-0270cf2f1c1d
+	k8s.io/utils => k8s.io/utils v0.0.0-20190920012459-5008bf6f8cd6 // k8s.io/client-go@kubernetes-1.15.4
 )
