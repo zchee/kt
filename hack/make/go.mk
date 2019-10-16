@@ -22,10 +22,13 @@ GO_GCFLAGS=
 GO_LDFLAGS=-s -w
 GO_LDFLAGS_STATIC=-s -w '-extldflags=-fno-PIC -static'
 
+comma := ,
+empty :=
+space := $(empty) $(empty)
 GO_BUILDTAGS=osusergo netgo
 GO_BUILDTAGS_STATIC=static static_build
 GO_INSTALLSUFFIX_STATIC=-installsuffix 'netgo'
-GO_FLAGS = -tags='$(GO_BUILDTAGS)'
+GO_FLAGS = -tags='$(subst $(space),$(comma),${GO_BUILDTAGS})'
 ifneq ($(GO_GCFLAGS),)
 	GO_FLAGS+=-gcflags="${GO_GCFLAGS}"
 endif
