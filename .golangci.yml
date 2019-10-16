@@ -44,7 +44,6 @@ linters-settings:
       - deepequalerrors
       - errorsas
       - findcall
-      - goanalysis_metalinter
       - httpresponse
       - inspect
       - loopclosure
