@@ -20,4 +20,4 @@ include hack/make/go.mk
 # ----------------------------------------------------------------------------
 # overlays
 
-override GO_PACKAGES = $(shell go list -f '{{if and (or .GoFiles .CgoFiles) (ne .Name "main")}}{{.ImportPath}}{{end}}' ./...)
+override GO_PACKAGES = $(shell go list ${GO_MOD_FLAGS} -f '{{if and (or .GoFiles .CgoFiles) (ne .Name "main")}}{{.ImportPath}}{{end}}' ./...)

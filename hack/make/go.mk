@@ -8,12 +8,21 @@ GO_PATH ?= $(shell go env GOPATH)
 GO_OS ?= $(shell go env GOOS)
 GO_ARCH ?= $(shell go env GOARCH)
 
+export GO111MODULE=on
+GO_MOD_FLAGS =
+ifneq ($(wildcard go.mod),)  # exist go.mod
+ifneq ($(wildcard ./vendor),)  # exist vender directory
+	GO_MOD_FLAGS=-mod=vendor
+endif
+endif
+
 PKG := $(subst $(GO_PATH)/src/,,$(CURDIR))
-GO_PACKAGES ?= $(shell go list ./...)
-GO_TEST_PKGS := $(shell go list -f='{{if or .TestGoFiles .XTestGoFiles}}{{.ImportPath}}{{end}}' ./...)
+GO_PKGS := $(shell go list ${GO_MOD_FLAGS} ./... | grep -v -e '.pb.go')
+GO_APP_PKGS := $(shell go list ${GO_MOD_FLAGS} -f '{{if and (or .GoFiles .CgoFiles) (ne .Name "main")}}{{.ImportPath}}{{end}}' ${PKG}/...)
+GO_TEST_PKGS := $(shell go list ${GO_MOD_FLAGS} -f='{{if or .TestGoFiles .XTestGoFiles}}{{.ImportPath}}{{end}}' ./...)
 GO_VENDOR_PKGS=
-ifneq ($(wildcard ./vendor),)
-GO_VENDOR_PKGS = $(shell go list -f '{{if and (or .GoFiles .CgoFiles) (ne .Name "main")}}./vendor/{{.ImportPath}}{{end}}' ./vendor/...)
+ifneq ($(wildcard ./vendor),)  # exist vender directory
+GO_VENDOR_PKGS = $(shell go list ${GO_MOD_FLAGS} -f '{{if and (or .GoFiles .CgoFiles) (ne .Name "main")}}./vendor/{{.ImportPath}}{{end}}' ./vendor/...)
 endif
 endif
 
@@ -36,12 +45,8 @@ ifneq ($(GO_LDFLAGS),)
 	GO_FLAGS+=-ldflags="${GO_LDFLAGS}"
 endif
 
-GO_MOD_FLAGS =
-ifneq ($(wildcard go.mod),)  # exist go.mod
-ifneq ($(GO111MODULE),off)
-	GO_MOD_FLAGS=-mod=vendor
-endif
-endif
+export GO111MODULE=on
+GO_MOD_FLAGS=-mod=vendor
 
 GO_TEST ?= go test
 ifneq ($(shell command -v gotest),)
@@ -122,7 +127,7 @@ pkg/install: GO_LDFLAGS=
 pkg/install: GO_BUILDTAGS=
 pkg/install:
 	$(call target)
-	GO111MODULE=on CGO_ENABLED=$(CGO_ENABLED) GOOS=$(GO_OS) GOARCH=$(GO_ARCH) go install -v ${GO_PACKAGES}
+	GO111MODULE=on CGO_ENABLED=$(CGO_ENABLED) GOOS=$(GO_OS) GOARCH=$(GO_ARCH) go install -v ${GO_MOD_FLAGS} ${GO_PACKAGES}
 
 ## test, bench and coverage
 
@@ -228,7 +233,7 @@ mod/graph:  ## Prints the module requirement graph with replacements applied.
 mod/install: mod/tidy mod/vendor
 mod/install:  ## Install the module vendor package as an object file.
 	$(call target)
-	@GO111MODULE=off go install -v $(strip $(GO_FLAGS)) $(GO_VENDOR_PKGS) || GO111MODULE=on go install -mod=vendor -v $(strip $(GO_FLAGS)) $(GO_VENDOR_PKGS)
+	@GO111MODULE=off go install -v $(strip $(GO_FLAGS)) $(GO_VENDOR_PKGS) || GO111MODULE=on go install -v ${GO_MOD_FLAGS} $(strip $(GO_FLAGS)) $(GO_VENDOR_PKGS)
 
 .PHONY: mod/update
 mod/update: mod/get mod/tidy mod/vendor mod/install  ## Updates all of vendor packages.
