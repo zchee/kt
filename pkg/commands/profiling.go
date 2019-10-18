@@ -15,14 +15,14 @@ import (
 
 var (
 	profileName   string
-	profileOutput string
+	profileOut string
 )
 
 func addProfilingFlags(flags *pflag.FlagSet) {
 	flags.StringVar(&profileName, "profile", "none", "Name of profile to capture. One of (none|cpu|heap|goroutine|threadcreate|block|mutex)")
-	flags.StringVar(&profileOutput, "profile-output", "profile.pprof", "Name of the file to write the profile to")
+	flags.StringVar(&profileOut, "profile-out", "profile.pprof", "Name of the file to write the profile to")
 	flags.MarkHidden("profile")
-	flags.MarkHidden("profile-output")
+	flags.MarkHidden("profile-out")
 }
 
 func initProfiling() error {
@@ -30,7 +30,7 @@ func initProfiling() error {
 	case "none":
 		return nil
 	case "cpu":
-		f, err := os.Create(profileOutput)
+		f, err := os.Create(profileOut)
 		if err != nil {
 			return err
 		}
@@ -67,7 +67,7 @@ func flushProfiling() error {
 		if profile == nil {
 			return nil
 		}
-		f, err := os.Create(profileOutput)
+		f, err := os.Create(profileOut)
 		if err != nil {
 			return err
 		}
