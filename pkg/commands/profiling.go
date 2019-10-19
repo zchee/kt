@@ -14,8 +14,8 @@ import (
 )
 
 var (
-	profileName   string
-	profileOut string
+	profileName string
+	profileOut  string
 )
 
 func addProfilingFlags(flags *pflag.FlagSet) {
@@ -71,7 +71,11 @@ func flushProfiling() error {
 		if err != nil {
 			return err
 		}
-		profile.WriteTo(f, 0)
+		var debug int
+		if profileName == "goroutine" {
+			debug = 2
+		}
+		profile.WriteTo(f, debug)
 	}
 
 	return nil
