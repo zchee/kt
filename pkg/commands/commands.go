@@ -11,7 +11,6 @@ import (
 	"flag"
 	iopkg "io"
 	"os"
-	"regexp"
 	"text/template"
 	"time"
 
@@ -24,6 +23,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 
 	"github.com/zchee/kt/pkg/controller"
+	regexp "github.com/zchee/kt/pkg/internal/lazyregexp"
 	"github.com/zchee/kt/pkg/internal/unsafes"
 	"github.com/zchee/kt/pkg/io"
 	"github.com/zchee/kt/pkg/manager"
@@ -219,15 +219,8 @@ func NewKTCommand(in iopkg.Reader, out, errOut iopkg.Writer) *cobra.Command {
 		if len(args) == 1 {
 			podQuery = args[0]
 		}
-		query.PodQuery, err = regexp.Compile(podQuery)
-		if err != nil {
-			return errors.Errorf("failed to compile regular expression from query: %w", err)
-		}
-
-		query.ContainerQuery, err = regexp.Compile(opts.Container)
-		if err != nil {
-			return errors.Errorf("failed to compile regular expression for container query: %w", err)
-		}
+		query.PodQuery = regexp.New(podQuery)
+		query.ContainerQuery = regexp.New(opts.Container)
 
 		query.ContainerState, err = options.NewContainerState(opts.ContainerState)
 		if err != nil {

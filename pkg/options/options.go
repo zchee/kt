@@ -5,13 +5,14 @@
 package options
 
 import (
-	"regexp"
 	"text/template"
 	"time"
 
 	errors "golang.org/x/xerrors"
 
 	corev1 "k8s.io/api/core/v1"
+
+	regexp "github.com/zchee/kt/pkg/internal/lazyregexp"
 )
 
 // Options represents a filtered log options.
