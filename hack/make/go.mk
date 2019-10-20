@@ -100,6 +100,9 @@ endef
 # ----------------------------------------------------------------------------
 # targets
 
+.PHONY: all
+all: mod pkg/install static
+
 ##@ build and install
 
 .PHONY: $(APP)
