@@ -9,10 +9,10 @@
 package lazyregexp
 
 import (
-	"os"
 	"regexp"
-	"strings"
 	"sync"
+
+	"github.com/zchee/kt/pkg/kttesting"
 )
 
 // Regexp is a wrapper around regexp.Regexp, where the underlying regexp will be
@@ -65,14 +65,12 @@ func (r *Regexp) SubexpNames() []string {
 	return r.re().SubexpNames()
 }
 
-var inTest = len(os.Args) > 0 && strings.HasSuffix(strings.TrimSuffix(os.Args[0], ".exe"), ".test")
-
 // New creates a new lazy regexp, delaying the compiling work until it is first
 // needed. If the code is being run as part of tests, the regexp compiling will
 // happen immediately.
 func New(str string) *Regexp {
 	lr := &Regexp{str: str}
-	if inTest {
+	if kttesting.InTest() {
 		// In tests, always compile the regexps early.
 		lr.re()
 	}
