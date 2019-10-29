@@ -5,10 +5,9 @@
 package options
 
 import (
+	"errors"
 	"text/template"
 	"time"
-
-	errors "golang.org/x/xerrors"
 
 	corev1 "k8s.io/api/core/v1"
 

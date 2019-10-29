@@ -5,12 +5,12 @@
 package trace
 
 import (
+	"fmt"
 	"net/http"
 	"sync"
 
 	"go.opencensus.io/plugin/ochttp"
 	"go.opencensus.io/stats/view"
-	errors "golang.org/x/xerrors"
 )
 
 var (
@@ -27,7 +27,7 @@ var registerOnce sync.Once
 // This function will called only once.
 func RegisterViews(views ...*view.View) error {
 	if err := view.Register(append(Views, views...)...); err != nil {
-		return errors.Errorf("failed register views: %w", err)
+		return fmt.Errorf("failed register views: %w", err)
 	}
 
 	return nil

@@ -8,7 +8,9 @@ package commands
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"flag"
+	"fmt"
 	iopkg "io"
 	"os"
 	"text/template"
@@ -16,7 +18,6 @@ import (
 
 	"github.com/spf13/cobra"
 	color "github.com/zchee/color/v2"
-	errors "golang.org/x/xerrors"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/clientcmd"
@@ -132,7 +133,7 @@ func NewKTCommand(in iopkg.Reader, out, errOut iopkg.Writer) *cobra.Command {
 
 		config, err := clientConfig.ClientConfig()
 		if err != nil {
-			return errors.Errorf("unable create rest config: %w", err)
+			return fmt.Errorf("unable create rest config: %w", err)
 		}
 		// TODO(zchee): inject OpenCensus RoundTripper
 		// config.Transport = trace.Transport()
@@ -150,7 +151,7 @@ func NewKTCommand(in iopkg.Reader, out, errOut iopkg.Writer) *cobra.Command {
 		default:
 			rawConfig, err := clientConfig.RawConfig()
 			if err != nil {
-				return errors.Errorf("unable get raw config: %w", err)
+				return fmt.Errorf("unable get raw config: %w", err)
 			}
 			if currentNamespace := rawConfig.Contexts[rawConfig.CurrentContext].Namespace; currentNamespace != "" {
 				mgrOpts.Namespace = currentNamespace
@@ -160,7 +161,7 @@ func NewKTCommand(in iopkg.Reader, out, errOut iopkg.Writer) *cobra.Command {
 		kt := new(KT)
 		kt.mgr, err = manager.New(config, mgrOpts)
 		if err != nil {
-			return errors.Errorf("unable create manager: %w", err)
+			return fmt.Errorf("unable create manager: %w", err)
 		}
 
 		switch opts.UseColor {
@@ -231,7 +232,7 @@ func NewKTCommand(in iopkg.Reader, out, errOut iopkg.Writer) *cobra.Command {
 
 		kt.ctrl, err = controller.New(ctx, ioStreams, kt.mgr, opts)
 		if err != nil {
-			return errors.Errorf("failed to create controller: %w", err)
+			return fmt.Errorf("failed to create controller: %w", err)
 		}
 		defer kt.ctrl.Close()
 

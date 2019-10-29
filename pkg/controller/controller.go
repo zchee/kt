@@ -7,6 +7,8 @@ package controller
 import (
 	"bufio"
 	"context"
+	"errors"
+	"fmt"
 	iopkg "io"
 	"net/http"
 	"sync"
@@ -17,7 +19,6 @@ import (
 	"github.com/go-logr/logr"
 	ants "github.com/panjf2000/ants/v2"
 	"go.uber.org/zap"
-	errors "golang.org/x/xerrors"
 
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -77,7 +78,7 @@ func New(ctx context.Context, ioStreams io.Streams, mgr ctrlmanager.Manager, opt
 		BufferItems: 64,
 	})
 	if err != nil {
-		return nil, errors.Errorf("failed to create state cache: %w", err)
+		return nil, fmt.Errorf("failed to create state cache: %w", err)
 	}
 	predicateFilter := &PredicateEventFilter{
 		ioStreams:    ioStreams,
@@ -99,13 +100,13 @@ func New(ctx context.Context, ioStreams io.Streams, mgr ctrlmanager.Manager, opt
 
 	gp, err := ants.NewPoolWithFunc(numWorkers, c.ReadStream, ants.WithNonblocking(true), ants.WithPreAlloc(true))
 	if err != nil {
-		return nil, errors.Errorf("failed to create goroutine pool: %w", err)
+		return nil, fmt.Errorf("failed to create goroutine pool: %w", err)
 	}
 	c.gp = gp
 
 	c.clientset, err = kubernetes.NewForConfig(mgr.GetConfig())
 	if err != nil {
-		return nil, errors.Errorf("failed to new clientset: %w", err)
+		return nil, fmt.Errorf("failed to new clientset: %w", err)
 	}
 
 	if err := c.SetupWithManager(mgr); err != nil {
