@@ -22,7 +22,7 @@ require (
 	go.opencensus.io v0.22.2-0.20191001044506-fa651b05963c
 	go.uber.org/atomic v1.4.0 // indirect
 	go.uber.org/multierr v1.2.0
-	go.uber.org/zap v1.10.0
+	go.uber.org/zap v1.11.0
 	golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550 // indirect
 	golang.org/x/net v0.0.0-20191014212845-da9a3fd4c582 // indirect
 	golang.org/x/sys v0.0.0-20191018095205-727590c5006e // indirect
