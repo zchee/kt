@@ -136,7 +136,7 @@ pkg/install: GO_LDFLAGS=
 pkg/install: GO_BUILDTAGS=
 pkg/install:
 	$(call target)
-	CGO_ENABLED=$(CGO_ENABLED) GOOS=$(GO_OS) GOARCH=$(GO_ARCH) go install -v ${GO_MOD_FLAGS} ${GO_PKGS}
+	@CGO_ENABLED=$(CGO_ENABLED) GOOS=$(GO_OS) GOARCH=$(GO_ARCH) go install -v ${GO_MOD_FLAGS} ${GO_PKGS}
 
 ##@ test, bench and coverage
 
@@ -232,6 +232,8 @@ mod/graph:  ## Prints the module requirement graph with replacements applied.
 
 .PHONY: mod/install
 mod/install: mod/tidy mod/vendor
+mod/install: GO_FLAGS+=${GO_MOD_FLAGS}
+mod/install: GO_FLAGS=
 mod/install:  ## Install the module vendor package as an object file.
 	$(call target)
 	@GO111MODULE=off go install -v $(strip $(GO_FLAGS)) $(GO_VENDOR_PKGS) || go install -v ${GO_MOD_FLAGS} $(strip $(GO_FLAGS)) $(GO_VENDOR_PKGS)
