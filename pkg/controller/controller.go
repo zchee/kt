@@ -14,7 +14,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/cenkalti/backoff"
+	backoff "github.com/cenkalti/backoff/v3"
 	"github.com/dgraph-io/ristretto"
 	"github.com/go-logr/logr"
 	ants "github.com/panjf2000/ants/v2"
