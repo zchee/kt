@@ -40,7 +40,7 @@ GO_CHECKPTR_FLAGS=all=-d=checkptr=1 -d=checkptr=2
 # https://tip.golang.org/doc/diagnostics.html#debugging
 GO_GCFLAGS_DEBUG=all=-N -l -dwarflocationlists=true
 GO_LDFLAGS=-s -w
-GO_LDFLAGS_STATIC="-extldflags=-fno-PIC -static"
+GO_LDFLAGS_STATIC=-s -w "-extldflags=-fno-PIC -static"
 GO_LDFLAGS_DEBUG=-compressdwarf=false
 
 GO_BUILDTAGS=
