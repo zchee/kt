@@ -33,13 +33,15 @@ require (
 	k8s.io/api v0.0.0-20191109101513-0171b7c15da1
 	k8s.io/apiextensions-apiserver v0.0.0-20191109110701-3fdecfd8e730 // indirect
 	k8s.io/apimachinery v0.0.0-20191109100838-fee41ff082ed
-	k8s.io/client-go v0.0.0-20191109102209-3c0d1af94be5
-	sigs.k8s.io/controller-runtime v0.3.1-0.20191108205852-47744b5a819d
+	k8s.io/client-go v0.0.0-20190918160344-1fbdaa4c8d90
+	sigs.k8s.io/controller-runtime v0.4.0
 )
 
-replace k8s.io/client-go => k8s.io/client-go v0.0.0-20190918160344-1fbdaa4c8d90 // k8s.io/client-go@kubernetes-1.16.0
+// pin
+replace k8s.io/client-go => k8s.io/client-go v0.0.0-20190918160344-1fbdaa4c8d90 // kubernetes-1.16.0
 
 replace (
+	// k8s.io/client-go dependencies
 	golang.org/x/crypto => golang.org/x/crypto v0.0.0-20181025213731-e84da0312774 // k8s.io/client-go@kubernetes-1.16.0
 	golang.org/x/lint => golang.org/x/lint v0.0.0-20181217174547-8f45f776aaf1 // k8s.io/client-go@kubernetes-1.16.0
 	golang.org/x/oauth2 => golang.org/x/oauth2 v0.0.0-20190402181905-9f3314589c9a // k8s.io/client-go@kubernetes-1.16.0
@@ -48,7 +50,9 @@ replace (
 	golang.org/x/text => golang.org/x/text v0.3.1-0.20181227161524-e6919f6577db // k8s.io/client-go@kubernetes-1.16.0
 	golang.org/x/time => golang.org/x/time v0.0.0-20161028155119-f51c12702a4d // k8s.io/client-go@kubernetes-1.16.0
 	k8s.io/api => k8s.io/api v0.0.0-20190918155943-95b840bb6a1f // k8s.io/client-go@kubernetes-1.16.0
-	k8s.io/apimachinery => k8s.io/apimachinery v0.0.0-20190913080033-27d36303b655 // k8s.io/client-go@kubernetes-1.16.0
-)
 
-replace k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.0.0-20190918161926-8f644eb6e783 // sigs.k8s.io/controller-runtime
+	// sigs.k8s.io/controller-runtime dependencies
+	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.0.0-20190918161926-8f644eb6e783 // sigs.k8s.io/controller-runtime@v0.4.0
+	k8s.io/apimachinery => k8s.io/apimachinery v0.0.0-20190913080033-27d36303b655 // k8s.io/client-go@kubernetes-1.16.0
+	k8s.io/utils => k8s.io/utils v0.0.0-20190801114015-581e00157fb1 // k8s.io/client-go@kubernetes-1.16.0
+)
