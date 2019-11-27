@@ -1,5 +1,4 @@
 run:
-  deadline: 2m
   issues-exit-code: 1
   tests: true
   skip-dirs:
@@ -15,7 +14,7 @@ linters-settings:
   dupl:
     threshold: 400
   errcheck:
-    check-type-assertions: true
+    check-type-assertions: false
     check-blank: true
     exclude: .errcheckignore
   goconst:
@@ -28,48 +27,46 @@ linters-settings:
   golint:
     min-confidence: 0.3
   govet:
-    check-shadowing: false
     enable:
-      - asmdecl
-      - assign
-      - atomic
-      - atomicalign
-      - bools
-      - buildssa
-      - buildtag
-      - cgocall
-      - composites
-      - copylock
-      - ctrlflow
-      - deepequalerrors
-      - errorsas
-      - findcall
-      - httpresponse
-      - inspect
-      - loopclosure
-      - lostcancel
-      - nilfunc
-      - nilness
-      - pkgfact
-      - printf
-      - shift
-      - sortslice
-      - stdmethods
-      - structtag
-      - tests
-      - unmarshal
-      - unreachable
-      - unsafeptr
-      - unusedresult
-    disable:
-      - shadow
+      -  asmdecl
+      -  assign
+      -  atomic
+      -  atomicalign
+      -  bools
+      -  buildssa
+      -  buildtag
+      -  cgocall
+      -  composite
+      -  copylock
+      -  ctrlflow
+      -  deepequalerrors
+      -  errorsas
+      -  findcall
+      -  httpresponse
+      -  inspect
+      -  loopclosure
+      -  lostcancel
+      -  nilfunc
+      -  nilness
+      -  pkgfact
+      -  printf
+      -  shadow
+      -  shift
+      -  sortslice
+      -  stdmethods
+      -  structtag
+      -  tests
+      -  unmarshal
+      -  unreachable
+      -  unsafeptr
+      -  unusedresult
   gocritic:
     enabled-tags:
       - diagnostic
-      - style
-      - performance
       - experimental
       - opinionated
+      - performance
+      - style
     settings:
       hugeParam:
         sizeThreshold: 80
@@ -91,25 +88,42 @@ linters-settings:
     algo: cha
     check-exported: true
   unused:
-    check-exported: true
+    check-exported: false
 
 linters:
+  # disabled:
+  #   - funlen
+  #   - gochecknoglobals
+  #   - gochecknoinits
+  #   - gocyclo
+  #   - godox
+  #   - gosec
+  #   - lll
+  #   - nakedret
+  #   - scopelint
+  #   - unused
+  #   - wsl
+  disable-all: true
   enable:
     - bodyclose
     - deadcode
     - depguard
+    - dogsled
     - dupl
     - errcheck
+    - gocognit
     - goconst
     - gocritic
     - gofmt
     - goimports
     - golint
+    - gomnd
     - gosimple
     - govet
     - ineffassign
     - interfacer
     - maligned
+    - megacheck
     - misspell
     - prealloc
     - staticcheck
@@ -118,18 +132,9 @@ linters:
     - typecheck
     - unconvert
     - unparam
-    - varcheck
-  disable:
-    - funlen
-    - gochecknoglobals
-    - gochecknoinits
-    - gocyclo
-    - gosec
-    - lll
-    - nakedret
-    - scopelint
     - unused
-  fast: false
+    - varcheck
+    - whitespace
 
 issues:
   exclude-use-default: true
