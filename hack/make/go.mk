@@ -232,11 +232,10 @@ mod/graph:  ## Prints the module requirement graph with replacements applied.
 
 .PHONY: mod/install
 mod/install: mod/tidy mod/vendor
-mod/install: GO_FLAGS+=${GO_MOD_FLAGS}
 mod/install: GO_FLAGS=
 mod/install:  ## Install the module vendor package as an object file.
 	$(call target)
-	@GO111MODULE=off go install -v $(strip $(GO_FLAGS)) $(GO_VENDOR_PKGS) || go install -v ${GO_MOD_FLAGS} $(strip $(GO_FLAGS)) $(GO_VENDOR_PKGS)
+	@go install -v ${GO_MOD_FLAGS} $(strip $(GO_FLAGS)) $(GO_VENDOR_PKGS) || GO111MODULE=off go install -v $(strip $(GO_FLAGS)) $(GO_VENDOR_PKGS)
 
 .PHONY: mod/update
 mod/update: mod/get mod/tidy mod/vendor mod/install  ## Updates all of vendor packages.
