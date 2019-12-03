@@ -45,7 +45,7 @@ func NewCommand() *cobra.Command {
 	return NewKTCommand(os.Stdin, os.Stdout, os.Stderr)
 }
 
-type KT struct {
+type kt struct {
 	ctrl *controller.Controller
 	mgr  *manager.Manager
 }
@@ -105,6 +105,7 @@ func NewKTCommand(in iopkg.Reader, out, errOut iopkg.Writer) *cobra.Command {
 	f.IntVar(&opts.Concurrency, "concurrency", opts.Concurrency, "max concurrent reconciler.")
 
 	// misc options
+	f.BoolVarP(&opts.Debug, "debug", "d", false, "debug mode.")
 	f.Int64Var(&opts.Lines, "tail", opts.Lines, "The number of lines from the end of the logs to show. Defaults to -1, showing all logs.")
 	f.StringVar(&opts.UseColor, "color", opts.UseColor, "Color output. Can be 'always', 'never', or 'auto'")
 	f.StringVarP(&opts.Format, "format", "f", opts.Format, "Template to use for log lines, leave empty to use --output flag")
@@ -158,7 +159,7 @@ func NewKTCommand(in iopkg.Reader, out, errOut iopkg.Writer) *cobra.Command {
 			}
 		}
 
-		kt := new(KT)
+		kt := new(kt)
 		kt.mgr, err = manager.New(config, mgrOpts)
 		if err != nil {
 			return fmt.Errorf("unable create manager: %w", err)
@@ -242,6 +243,6 @@ func NewKTCommand(in iopkg.Reader, out, errOut iopkg.Writer) *cobra.Command {
 	return cmd
 }
 
-func (kt *KT) RunTail(ctx context.Context) error {
+func (kt *kt) RunTail(ctx context.Context) error {
 	return kt.mgr.Start(ctx.Done())
 }
