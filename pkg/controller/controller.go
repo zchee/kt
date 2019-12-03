@@ -63,13 +63,18 @@ const numWorkers = 64
 
 // New returns the new Controller registered with the manager.Manager.
 func New(ctx context.Context, ioStreams io.Streams, mgr ctrlmanager.Manager, opts *options.Options) (c *Controller, err error) {
-	lvl := zap.NewAtomicLevelAt(zap.DebugLevel)
-	log := ctrlzap.New(func(o *ctrlzap.Options) {
-		o.Level = &lvl
-		o.Development = true
-		o.DestWritter = ioStreams.ErrOut
-	}).WithName("controller")
+	lvl := zap.NewAtomicLevelAt(zap.InfoLevel)
+	logOpts := []ctrlzap.Opts{
+		ctrlzap.Level(&lvl),
+		ctrlzap.WriteTo(ioStreams.ErrOut),
+	}
+	if opts.Debug {
+		lvl.SetLevel(zap.DebugLevel)
+		logOpts = append(logOpts, ctrlzap.Level(&lvl))
+		logOpts = append(logOpts, ctrlzap.UseDevMode(true))
+	}
 
+	log := ctrlzap.New(logOpts...).WithName("controller")
 	ctrllog.SetLogger(log)
 
 	state, err := ristretto.NewCache(&ristretto.Config{
