@@ -6,7 +6,6 @@ require (
 	cloud.google.com/go v0.45.1 // indirect
 	github.com/cenkalti/backoff/v3 v3.0.0
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
-	github.com/dgraph-io/ristretto v0.0.0-20191108194154-8d6a8a75b4ca
 	github.com/go-logr/logr v0.1.1-0.20190903151443-a1ebd699b195
 	github.com/gogo/protobuf v1.3.1 // indirect
 	github.com/golang/groupcache v0.0.0-20191027212112-611e8accdfc9 // indirect

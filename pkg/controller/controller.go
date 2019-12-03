@@ -15,7 +15,6 @@ import (
 	"time"
 
 	backoff "github.com/cenkalti/backoff/v3"
-	"github.com/dgraph-io/ristretto"
 	"github.com/go-logr/logr"
 	ants "github.com/panjf2000/ants/v2"
 	"go.uber.org/zap"
@@ -76,18 +75,8 @@ func New(ctx context.Context, ioStreams io.Streams, mgr ctrlmanager.Manager, opt
 
 	log := ctrlzap.New(logOpts...).WithName("controller")
 	ctrllog.SetLogger(log)
-
-	state, err := ristretto.NewCache(&ristretto.Config{
-		NumCounters: 1e6,
-		MaxCost:     1 << 20,
-		BufferItems: 64,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to create state cache: %w", err)
-	}
 	predicateFilter := &PredicateEventFilter{
 		ioStreams:    ioStreams,
-		state:        state,
 		log:          log.WithName("predicate"),
 		isNamespaced: (opts.AllNamespaces || len(opts.Namespaces) > 0),
 		query:        opts.Query,
