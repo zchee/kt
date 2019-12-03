@@ -16,6 +16,8 @@ import (
 
 // Options represents a filtered log options.
 type Options struct {
+	Debug bool
+
 	// global filters
 	Exclude []string
 	Include []string
