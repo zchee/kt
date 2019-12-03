@@ -13,6 +13,7 @@ require (
 	github.com/google/go-cmp v0.3.2-0.20190829225427-b1c9c4891a65
 	github.com/hashicorp/golang-lru v0.5.3 // indirect
 	github.com/imdario/mergo v0.3.8 // indirect
+	github.com/minio/sha256-simd v0.1.2-0.20190917233721-f675151bb5e1
 	github.com/panjf2000/ants/v2 v2.2.3-0.20191108040053-562ae1caf1f3
 	github.com/prometheus/client_golang v1.2.1 // indirect
 	github.com/spf13/cobra v0.0.6-0.20190805155617-b80588d523ec
