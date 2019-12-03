@@ -39,7 +39,7 @@ kt tails the Kubernetes logs for a container in a pod or specified resource.`
 `
 )
 
-// NewCommand creates the `kt` command with arguments.
+// NewCommand creates the kt command with arguments.
 func NewCommand() *cobra.Command {
 	return NewKTCommand(os.Stdin, os.Stdout, os.Stderr)
 }
@@ -47,30 +47,20 @@ func NewCommand() *cobra.Command {
 type kt struct {
 	ctrl *controller.Controller
 	mgr  *manager.Manager
+
+	ioStreams  io.Streams
+	completion string
+	opts       *options.Options
 }
 
 // NewKTCommand creates the `kt` command and its nested children.
 func NewKTCommand(in iopkg.Reader, out, errOut iopkg.Writer) *cobra.Command {
-	ctx := context.Background()
+	kt := &kt{}
 
-	ioStreams := io.Streams{In: in, Out: out, ErrOut: errOut}
+	kt.ioStreams = io.Streams{In: in, Out: out, ErrOut: errOut}
 
-	cmd := &cobra.Command{
-		Use:     "kt [pod-query]",
-		Short:   usageShort,
-		Long:    usageLong,
-		Version: Version(),
-		// Hook before and after Run initialize and write profiles to disk, respectively
-		PersistentPreRunE:  func(*cobra.Command, []string) error { return initProfiling() },
-		PersistentPostRunE: func(*cobra.Command, []string) error { return flushProfiling() },
-	}
-	cmd.SetVersionTemplate(versionTempl)
-	cmd.Flags().BoolP("version", "v", false, "Show "+cmd.Name()+" version.") // version flag is root only
-
-	var completion string
-	cmd.Flags().StringVar(&completion, "completion", completion, "Outputs kt command-line completion code for the specified shell. Can be 'bash' or 'zsh'")
-
-	opts := &options.Options{
+	// set default options.Options.
+	kt.opts = &options.Options{
 		Container:      ".*",
 		ContainerState: "running",
 		Since:          48 * time.Hour,
@@ -80,54 +70,75 @@ func NewKTCommand(in iopkg.Reader, out, errOut iopkg.Writer) *cobra.Command {
 		Output:         "default",
 	}
 
+	cmd := &cobra.Command{
+		Use:                "kt [pod-query]",
+		Short:              usageShort,
+		Long:               usageLong,
+		Version:            Version(),
+		PersistentPreRunE:  initProfiling(),  // Hook before and after Run initialize and write profiles to disk, respectively
+		PersistentPostRunE: flushProfiling(), // Hook before and after Run initialize and write profiles to disk, respectively
+	}
+
+	addVersionFlag(cmd) // version flag is root only
+
 	f := cmd.Flags()
 	addProfilingFlags(f)
 	f.AddGoFlagSet(flag.CommandLine)
 
 	// kubeconfig and context
-	f.StringVar(&opts.KubeConfig, "kubeconfig", opts.KubeConfig, "Path to kubeconfig file to use")
-	f.StringVar(&opts.KubeContext, "context", opts.KubeContext, "Kubernetes context to use. Default to current context configured in kubeconfig.")
+	f.StringVar(&kt.opts.KubeConfig, "kubeconfig", kt.opts.KubeConfig, "Path to kubeconfig file to use")
+	f.StringVar(&kt.opts.KubeContext, "context", kt.opts.KubeContext, "Kubernetes context to use. Default to current context configured in kubeconfig.")
 
 	// global filters
-	f.StringSliceVarP(&opts.Exclude, "exclude", "e", opts.Exclude, "Regex of log lines to exclude")
-	f.StringSliceVarP(&opts.Include, "include", "i", opts.Include, "Regex of log lines to include")
+	f.StringSliceVarP(&kt.opts.Exclude, "exclude", "e", kt.opts.Exclude, "Regex of log lines to exclude")
+	f.StringSliceVarP(&kt.opts.Include, "include", "i", kt.opts.Include, "Regex of log lines to include")
 
 	// pod filters
-	f.StringVarP(&opts.Container, "container", "c", opts.Container, "Container name when multiple containers in pod")
-	f.StringVar(&opts.ContainerState, "container-state", opts.ContainerState, "If present, tail containers with status in running, waiting or terminated. Default to running.")
-	f.StringVarP(&opts.ExcludeContainer, "exclude-container", "E", opts.ExcludeContainer, "Exclude a Container name")
-	f.StringSliceVarP(&opts.Namespaces, "namespaces", "n", opts.Namespaces, "Kubernetes namespace to use. Default to namespace configured in Kubernetes context. can set command separated multiple namespaces.")
-	f.BoolVar(&opts.AllNamespaces, "all-namespaces", opts.AllNamespaces, "If present, tail across all namespaces. A specific namespace is ignored even if specified with --namespace.")
-	f.StringVarP(&opts.Selector, "selector", "l", opts.Selector, "Selector (label query) to filter on. If present, default to \".*\" for the pod-query.")
-	f.BoolVarP(&opts.Timestamps, "timestamps", "t", opts.Timestamps, "Print timestamps")
-	f.DurationVarP(&opts.Since, "since", "s", opts.Since, "Return logs newer than a relative duration like 5s, 2m, or 3h.")
-	f.IntVar(&opts.Concurrency, "concurrency", opts.Concurrency, "max concurrent reconciler.")
+	f.StringVarP(&kt.opts.Container, "container", "c", kt.opts.Container, "Container name when multiple containers in pod")
+	f.StringVar(&kt.opts.ContainerState, "container-state", kt.opts.ContainerState, "If present, tail containers with status in running, waiting or terminated. Default to running.")
+	f.StringVarP(&kt.opts.ExcludeContainer, "exclude-container", "E", kt.opts.ExcludeContainer, "Exclude a Container name")
+	f.StringSliceVarP(&kt.opts.Namespaces, "namespaces", "n", kt.opts.Namespaces, "Kubernetes namespace to use. Default to namespace configured in Kubernetes context. can set command separated multiple namespaces.")
+	f.BoolVar(&kt.opts.AllNamespaces, "all-namespaces", kt.opts.AllNamespaces, "If present, tail across all namespaces. A specific namespace is ignored even if specified with --namespace.")
+	f.StringVarP(&kt.opts.Selector, "selector", "l", kt.opts.Selector, "Selector (label query) to filter on. If present, default to \".*\" for the pod-query.")
+	f.BoolVarP(&kt.opts.Timestamps, "timestamps", "t", kt.opts.Timestamps, "Print timestamps")
+	f.DurationVarP(&kt.opts.Since, "since", "s", kt.opts.Since, "Return logs newer than a relative duration like 5s, 2m, or 3h.")
+	f.IntVar(&kt.opts.Concurrency, "concurrency", kt.opts.Concurrency, "max concurrent reconciler.")
 
 	// misc options
-	f.BoolVarP(&opts.Debug, "debug", "d", false, "debug mode.")
-	f.Int64Var(&opts.Lines, "tail", opts.Lines, "The number of lines from the end of the logs to show. Defaults to -1, showing all logs.")
-	f.StringVar(&opts.UseColor, "color", opts.UseColor, "Color output. Can be 'always', 'never', or 'auto'")
-	f.StringVarP(&opts.Format, "format", "f", opts.Format, "Template to use for log lines, leave empty to use --output flag")
-	f.StringVarP(&opts.Output, "output", "o", opts.Output, "Specify predefined template. Currently support: [default, raw, json]")
+	f.BoolVarP(&kt.opts.Debug, "debug", "d", false, "debug mode.")
+	f.Int64Var(&kt.opts.Lines, "tail", kt.opts.Lines, "The number of lines from the end of the logs to show. Defaults to -1, showing all logs.")
+	f.StringVar(&kt.opts.UseColor, "color", kt.opts.UseColor, "Color output. Can be 'always', 'never', or 'auto'")
+	f.StringVarP(&kt.opts.Format, "format", "f", kt.opts.Format, "Template to use for log lines, leave empty to use --output flag")
+	f.StringVarP(&kt.opts.Output, "output", "o", kt.opts.Output, "Specify predefined template. Currently support: [default, raw, json]")
 
-	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
-		if completion != "" {
-			return RunCompletion(ioStreams.Out, completion, cmd)
+	// completions
+	cmd.Flags().StringVar(&kt.completion, "completion", kt.completion, "Outputs kt command-line completion code for the specified shell. Can be 'bash' or 'zsh'")
+
+	cmd.RunE = kt.Run(context.Background())
+
+	return cmd
+}
+
+// Run runs the tail command.
+func (kt *kt) Run(ctx context.Context) cobraRunEFunc {
+	return func(cmd *cobra.Command, args []string) (err error) {
+		if kt.completion != "" {
+			return RunCompletion(kt.ioStreams.Out, kt.completion, cmd)
 		}
 
-		if opts.KubeConfig == "" {
-			opts.KubeConfig = os.Getenv("KUBECONFIG")
-			if opts.KubeConfig == "" {
-				opts.KubeConfig = clientcmd.RecommendedHomeFile
+		if kt.opts.KubeConfig == "" {
+			kt.opts.KubeConfig = os.Getenv("KUBECONFIG")
+			if kt.opts.KubeConfig == "" {
+				kt.opts.KubeConfig = clientcmd.RecommendedHomeFile
 			}
 		}
 
 		clientConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
 			&clientcmd.ClientConfigLoadingRules{
-				ExplicitPath: opts.KubeConfig,
+				ExplicitPath: kt.opts.KubeConfig,
 			},
 			&clientcmd.ConfigOverrides{
-				CurrentContext: opts.KubeContext,
+				CurrentContext: kt.opts.KubeContext,
 			},
 		)
 
@@ -140,13 +151,13 @@ func NewKTCommand(in iopkg.Reader, out, errOut iopkg.Writer) *cobra.Command {
 
 		var mgrOpts manager.Options
 		switch {
-		case opts.AllNamespaces:
+		case kt.opts.AllNamespaces:
 			mgrOpts.Namespace = metav1.NamespaceAll
-		case len(opts.Namespaces) >= 1:
-			if len(opts.Namespaces) == 1 {
-				mgrOpts.Namespace = opts.Namespaces[0]
+		case len(kt.opts.Namespaces) >= 1:
+			if len(kt.opts.Namespaces) == 1 {
+				mgrOpts.Namespace = kt.opts.Namespaces[0]
 			} else {
-				mgrOpts.NewCache = cache.MultiNamespacedCacheBuilder(opts.Namespaces)
+				mgrOpts.NewCache = cache.MultiNamespacedCacheBuilder(kt.opts.Namespaces)
 			}
 		default:
 			rawConfig, err := clientConfig.RawConfig()
@@ -158,13 +169,12 @@ func NewKTCommand(in iopkg.Reader, out, errOut iopkg.Writer) *cobra.Command {
 			}
 		}
 
-		kt := new(kt)
 		kt.mgr, err = manager.New(config, mgrOpts)
 		if err != nil {
 			return fmt.Errorf("unable create manager: %w", err)
 		}
 
-		switch opts.UseColor {
+		switch kt.opts.UseColor {
 		case "auto":
 			// nothig to do
 		case "always":
@@ -175,18 +185,18 @@ func NewKTCommand(in iopkg.Reader, out, errOut iopkg.Writer) *cobra.Command {
 			return errors.New("color flag should be one of 'always', 'never', or 'auto'")
 		}
 
-		if opts.Format == "" {
+		if kt.opts.Format == "" {
 			var format string
-			switch opts.Output {
+			switch kt.opts.Output {
 			case "default":
 				if color.NoColor {
 					format = "{{.PodName}} {{.ContainerName}} {{.Message}}\n"
-					if opts.AllNamespaces {
+					if kt.opts.AllNamespaces {
 						format = "{{.Namespace}} " + format
 					}
 				} else {
 					format = "{{color .PodColor .PodName}} {{color .ContainerColor .ContainerName}} {{.Message}}\n"
-					if opts.AllNamespaces {
+					if kt.opts.AllNamespaces {
 						format = "{{color .PodColor .Namespace}} " + format
 					}
 
@@ -197,7 +207,7 @@ func NewKTCommand(in iopkg.Reader, out, errOut iopkg.Writer) *cobra.Command {
 				format = "{{json .}}\n"
 			}
 
-			opts.Format = format
+			kt.opts.Format = format
 		}
 
 		tmplFuncs := map[string]interface{}{
@@ -212,7 +222,7 @@ func NewKTCommand(in iopkg.Reader, out, errOut iopkg.Writer) *cobra.Command {
 				return c.SprintFunc()(text)
 			},
 		}
-		opts.Template = template.Must(template.New("log").Funcs(tmplFuncs).Parse(opts.Format))
+		kt.opts.Template = template.Must(template.New("log").Funcs(tmplFuncs).Parse(kt.opts.Format))
 
 		query := new(options.Query)
 
@@ -221,27 +231,21 @@ func NewKTCommand(in iopkg.Reader, out, errOut iopkg.Writer) *cobra.Command {
 			podQuery = args[0]
 		}
 		query.PodQuery = regexp.New(podQuery)
-		query.ContainerQuery = regexp.New(opts.Container)
+		query.ContainerQuery = regexp.New(kt.opts.Container)
 
-		query.ContainerState, err = options.NewContainerState(opts.ContainerState)
+		query.ContainerState, err = options.NewContainerState(kt.opts.ContainerState)
 		if err != nil {
 			return err
 		}
 
-		opts.Query = query
+		kt.opts.Query = query
 
-		kt.ctrl, err = controller.New(ctx, ioStreams, kt.mgr, opts)
+		kt.ctrl, err = controller.New(ctx, kt.ioStreams, kt.mgr, kt.opts)
 		if err != nil {
 			return fmt.Errorf("failed to create controller: %w", err)
 		}
 		defer kt.ctrl.Close()
 
-		return kt.RunTail(ctx)
+		return kt.mgr.Start(ctx.Done())
 	}
-
-	return cmd
-}
-
-func (kt *kt) RunTail(ctx context.Context) error {
-	return kt.mgr.Start(ctx.Done())
 }
