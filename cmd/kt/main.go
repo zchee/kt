@@ -10,11 +10,11 @@ import (
 	// initialize all known client auth plugins
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
-	"github.com/zchee/kt/pkg/commands"
+	"github.com/zchee/kt/pkg/cmd"
 )
 
 func main() {
-	if err := commands.NewCommand().Execute(); err != nil {
+	if err := cmd.NewCommand().Execute(); err != nil {
 		os.Exit(1)
 	}
 }
