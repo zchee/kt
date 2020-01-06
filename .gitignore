@@ -52,4 +52,5 @@ coverage.*
 vendor/
 
 # binary
+bin/
 /kt
