@@ -9,7 +9,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	iopkg "io"
+	"io"
 	"net/http"
 	"sync"
 	"time"
@@ -32,8 +32,8 @@ import (
 	ctrlreconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/zchee/kt/pkg/internal/unsafes"
-	"github.com/zchee/kt/pkg/io"
 	"github.com/zchee/kt/pkg/options"
+	"github.com/zchee/kt/pkg/stdio"
 )
 
 // Controller represents a tail Kubernetes resource logs.
@@ -50,7 +50,7 @@ type Controller struct {
 
 	ctx       context.Context // for implements ctrlreconcile.Reconciler
 	gp        *ants.PoolWithFunc
-	ioStreams io.Streams
+	ioStreams stdio.Streams
 	ioMu      sync.Mutex // mutex lock of ioStreams
 	opts      *options.Options
 }
@@ -61,7 +61,7 @@ var _ ctrlreconcile.Reconciler = (*Controller)(nil)
 const numWorkers = 64
 
 // New returns the new Controller registered with the manager.Manager.
-func New(ctx context.Context, ioStreams io.Streams, mgr ctrlmanager.Manager, opts *options.Options) (c *Controller, err error) {
+func New(ctx context.Context, ioStreams stdio.Streams, mgr ctrlmanager.Manager, opts *options.Options) (c *Controller, err error) {
 	lvl := zap.NewAtomicLevelAt(zap.InfoLevel)
 	logOpts := []ctrlzap.Opts{
 		ctrlzap.Level(&lvl),
@@ -192,7 +192,7 @@ func (c *Controller) Reconcile(req ctrlreconcile.Request) (result ctrlreconcile.
 }
 
 type eventStream struct {
-	stream iopkg.ReadCloser
+	stream io.ReadCloser
 	LogEvent
 }
 
@@ -204,7 +204,7 @@ func (c *Controller) ReadStream(v interface{}) {
 	for {
 		l, err := r.ReadBytes(lineDelim)
 		if err != nil {
-			if errors.Is(err, iopkg.EOF) {
+			if errors.Is(err, io.EOF) {
 				return
 			}
 			c.log.Error(err, "failed to ReadBytes")

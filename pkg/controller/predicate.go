@@ -15,8 +15,8 @@ import (
 	ctrlevent "sigs.k8s.io/controller-runtime/pkg/event"
 	ctrlpredicate "sigs.k8s.io/controller-runtime/pkg/predicate"
 
-	"github.com/zchee/kt/pkg/io"
 	"github.com/zchee/kt/pkg/options"
+	"github.com/zchee/kt/pkg/stdio"
 )
 
 const (
@@ -35,7 +35,7 @@ const (
 
 // PredicateEventFilter filters events before they are provided to handler.EventHandlers.
 type PredicateEventFilter struct {
-	ioStreams    io.Streams
+	ioStreams    stdio.Streams
 	ioMu         sync.Mutex
 	log          logr.Logger
 	isNamespaced bool

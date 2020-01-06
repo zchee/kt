@@ -14,6 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package io contains flags which can be added to you command, bound, completed, and produce
+// Package stdio contains flags which can be added to you command, bound, completed, and produce
 // useful helper functions.  Nothing in this package can depend on kube/kube
-package io
+package stdio

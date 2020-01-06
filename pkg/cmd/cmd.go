@@ -10,7 +10,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	iopkg "io"
+	"io"
 	"os"
 	"text/template"
 	"time"
@@ -25,9 +25,9 @@ import (
 	"github.com/zchee/kt/pkg/controller"
 	regexp "github.com/zchee/kt/pkg/internal/lazyregexp"
 	"github.com/zchee/kt/pkg/internal/unsafes"
-	"github.com/zchee/kt/pkg/io"
 	"github.com/zchee/kt/pkg/manager"
 	"github.com/zchee/kt/pkg/options"
+	"github.com/zchee/kt/pkg/stdio"
 )
 
 const (
@@ -48,16 +48,16 @@ type kt struct {
 	ctrl *controller.Controller
 	mgr  *manager.Manager
 
-	ioStreams  io.Streams
+	ioStreams  stdio.Streams
 	completion string
 	opts       *options.Options
 }
 
 // NewKTCommand creates the `kt` command and its nested children.
-func NewKTCommand(in iopkg.Reader, out, errOut iopkg.Writer) *cobra.Command {
+func NewKTCommand(in io.Reader, out, errOut io.Writer) *cobra.Command {
 	kt := &kt{}
 
-	kt.ioStreams = io.Streams{In: in, Out: out, ErrOut: errOut}
+	kt.ioStreams = stdio.Streams{In: in, Out: out, ErrOut: errOut}
 
 	// set default options.Options.
 	kt.opts = &options.Options{
