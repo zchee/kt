@@ -44,7 +44,7 @@ type PredicateEventFilter struct {
 
 var _ ctrlpredicate.Predicate = (*PredicateEventFilter)(nil)
 
-func (e *PredicateEventFilter) filterQuery(state corev1.ContainerStatus) bool {
+func (e *PredicateEventFilter) filterQuery(state *corev1.ContainerStatus) bool {
 	if e.query.ContainerQuery.MatchString(state.Name) {
 		return true // matched ContainerQuery
 	}
@@ -60,7 +60,7 @@ func (e *PredicateEventFilter) filterQuery(state corev1.ContainerStatus) bool {
 	return true
 }
 
-func (e *PredicateEventFilter) printFunc(marker string, pod *corev1.Pod, container corev1.Container) {
+func (e *PredicateEventFilter) printFunc(marker string, pod *corev1.Pod, container *corev1.Container) {
 	var (
 		attr color.Attribute
 		p, c *color.Color
@@ -97,22 +97,24 @@ func (e *PredicateEventFilter) Create(event ctrlevent.CreateEvent) bool {
 		return false // skip if not matched PodQuery
 	}
 
-	for i, s := range pod.Status.InitContainerStatuses {
-		if !e.filterQuery(s) {
+	for i := range pod.Status.InitContainerStatuses {
+		state := pod.Status.InitContainerStatuses[i]
+		if !e.filterQuery(&state) {
 			continue
 		}
 
-		if s.State.Running != nil {
-			e.printFunc(createPodMark, pod, pod.Spec.InitContainers[i])
+		if state.State.Running != nil {
+			e.printFunc(createPodMark, pod, &pod.Spec.InitContainers[i])
 		}
 	}
-	for i, s := range pod.Status.ContainerStatuses {
-		if !e.filterQuery(s) {
+	for i := range pod.Status.ContainerStatuses {
+		state := pod.Status.ContainerStatuses[i]
+		if !e.filterQuery(&state) {
 			continue
 		}
 
-		if s.State.Running != nil {
-			e.printFunc(createPodMark, pod, pod.Spec.Containers[i])
+		if state.State.Running != nil {
+			e.printFunc(createPodMark, pod, &pod.Spec.Containers[i])
 		}
 	}
 
@@ -127,14 +129,16 @@ func (e *PredicateEventFilter) Delete(event ctrlevent.DeleteEvent) bool {
 		return false // skip if not matched PodQuery
 	}
 
-	for i, s := range pod.Status.InitContainerStatuses {
-		if s.State.Terminated == nil {
-			e.printFunc(deletePodMark, pod, pod.Spec.InitContainers[i])
+	for i := range pod.Status.InitContainerStatuses {
+		state := pod.Status.InitContainerStatuses[i]
+		if state.State.Terminated == nil {
+			e.printFunc(deletePodMark, pod, &pod.Spec.InitContainers[i])
 		}
 	}
-	for i, s := range pod.Status.ContainerStatuses {
-		if s.State.Terminated == nil {
-			e.printFunc(deletePodMark, pod, pod.Spec.Containers[i])
+	for i := range pod.Status.ContainerStatuses {
+		state := pod.Status.ContainerStatuses[i]
+		if state.State.Terminated == nil {
+			e.printFunc(deletePodMark, pod, &pod.Spec.Containers[i])
 		}
 	}
 
