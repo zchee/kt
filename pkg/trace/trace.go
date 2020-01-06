@@ -5,37 +5,14 @@
 package trace
 
 import (
-	"fmt"
-	"net/http"
-	"sync"
+	"context"
+	"net/http/httptrace"
 
-	"go.opencensus.io/plugin/ochttp"
-	"go.opencensus.io/stats/view"
+	otelhttptrace "go.opentelemetry.io/otel/plugin/httptrace"
 )
 
-var (
-	Views = []*view.View{
-		ochttp.ClientSentBytesDistribution,
-		ochttp.ClientReceivedBytesDistribution,
-		ochttp.ClientRoundtripLatencyDistribution,
-	}
-)
-
-var registerOnce sync.Once
-
-// RegisterViews appends few custom views to default views and registers to the defaultWorker.
-// This function will called only once.
-func RegisterViews(views ...*view.View) error {
-	if err := view.Register(append(Views, views...)...); err != nil {
-		return fmt.Errorf("failed register views: %w", err)
-	}
-
-	return nil
-
-}
-
-// Transport is an http.RoundTripper that instruments all outgoing requests with
-// OpenCensus stats and tracing.
-func Transport() http.RoundTripper {
-	return &ochttp.Transport{}
+// WithClientTrace returns a new context with
+// an embedded otelhttptrace.NewClientTrace based on the parent ctx.
+func WithClientTrace(ctx context.Context) context.Context {
+	return httptrace.WithClientTrace(ctx, otelhttptrace.NewClientTrace(ctx))
 }
