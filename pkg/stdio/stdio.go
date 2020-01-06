@@ -34,10 +34,10 @@ type Streams struct {
 }
 
 // NewTestIOStreams returns a valid IOStreams and in, out, errout buffers for unit tests
-func NewTestIOStreams() (Streams, *bytes.Buffer, *bytes.Buffer, *bytes.Buffer) {
-	in := &bytes.Buffer{}
-	out := &bytes.Buffer{}
-	errOut := &bytes.Buffer{}
+func NewTestIOStreams() (streams Streams, in, out, errOut *bytes.Buffer) {
+	in = &bytes.Buffer{}
+	out = &bytes.Buffer{}
+	errOut = &bytes.Buffer{}
 
 	return Streams{
 		In:     in,
