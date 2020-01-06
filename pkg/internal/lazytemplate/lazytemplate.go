@@ -13,7 +13,7 @@ import (
 	"sync"
 	"text/template"
 
-	"github.com/zchee/kt/pkg/kttesting"
+	"github.com/zchee/kt/pkg/internal/kttesting"
 )
 
 // Template is a wrapper around text/template.Template, where the underlying

@@ -12,7 +12,7 @@ import (
 	"regexp"
 	"sync"
 
-	"github.com/zchee/kt/pkg/kttesting"
+	"github.com/zchee/kt/pkg/internal/kttesting"
 )
 
 // Regexp is a wrapper around regexp.Regexp, where the underlying regexp will be
