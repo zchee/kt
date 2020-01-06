@@ -45,8 +45,8 @@ type PredicateEventFilter struct {
 var _ ctrlpredicate.Predicate = (*PredicateEventFilter)(nil)
 
 func (e *PredicateEventFilter) filterQuery(state corev1.ContainerStatus) bool {
-	if !e.query.ContainerQuery.MatchString(state.Name) {
-		return false // not matched ContainerQuery
+	if e.query.ContainerQuery.MatchString(state.Name) {
+		return true // matched ContainerQuery
 	}
 
 	if e.query.ExcludeContainerQuery != nil && e.query.ExcludeContainerQuery.MatchString(state.Name) {
@@ -143,14 +143,18 @@ func (e *PredicateEventFilter) Delete(event ctrlevent.DeleteEvent) bool {
 
 // Update implements predicate.Predicate.
 func (e *PredicateEventFilter) Update(event ctrlevent.UpdateEvent) bool {
+	podQueryFn := func(pod *corev1.Pod) bool {
+		return e.query.PodQuery.MatchString(pod.Name) // skip if not matched PodQuery
+	}
+
 	podOld := event.ObjectOld.(*corev1.Pod)
-	if !e.query.PodQuery.MatchString(podOld.Name) {
-		return false // skip if not matched PodQuery
+	if matched := podQueryFn(podOld); matched {
+		return true
 	}
 
 	podNew := event.ObjectNew.(*corev1.Pod)
-	if !e.query.PodQuery.MatchString(podNew.Name) {
-		return false // skip if not matched PodQuery
+	if matched := podQueryFn(podNew); matched {
+		return true
 	}
 
 	return true
