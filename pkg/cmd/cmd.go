@@ -199,7 +199,6 @@ func (kt *kt) Run(ctx context.Context) cobraRunEFunc {
 					if kt.opts.AllNamespaces {
 						format = "{{color .PodColor .Namespace}} " + format
 					}
-
 				}
 			case "raw":
 				format = "{{.Message}}"
