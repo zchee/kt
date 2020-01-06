@@ -50,7 +50,6 @@ linters-settings:
       -  nilness
       -  pkgfact
       -  printf
-      -  shadow
       -  shift
       -  sortslice
       -  stdmethods
@@ -60,6 +59,8 @@ linters-settings:
       -  unreachable
       -  unsafeptr
       -  unusedresult
+    disable:
+      -  shadow
   gocritic:
     enabled-tags:
       - diagnostic
@@ -97,6 +98,7 @@ linters:
   #   - gochecknoinits
   #   - gocyclo
   #   - godox
+  #   - gomnd
   #   - gosec
   #   - lll
   #   - nakedret
@@ -117,7 +119,6 @@ linters:
     - gofmt
     - goimports
     - golint
-    - gomnd
     - gosimple
     - govet
     - ineffassign
@@ -138,6 +139,25 @@ linters:
 
 issues:
   exclude-use-default: true
+  exclude-rules:
+    - path: pkg/cmd/cmd.go
+      text: "cognitive complexity 54 of func"
+      linters:
+        - gocognit
+
+    - path: pkg/manager/manager.go
+      text: "Error return value of `kubescheme.AddToScheme` is not checked"
+      linters:
+        - errcheck
+
+    - path: pkg/options/options.go
+      text: "struct of size \\d* bytes could be of size \\d* bytes"
+      linters:
+        - maligned
+
+    - path: pkg/pool/goroutine.go
+      linters:
+        - unparam
 
 output:
   format: colored-line-number
