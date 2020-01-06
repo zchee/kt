@@ -128,12 +128,12 @@ func (e *PredicateEventFilter) Delete(event ctrlevent.DeleteEvent) bool {
 	}
 
 	for i, s := range pod.Status.InitContainerStatuses {
-		if s.State.Terminated != nil {
+		if s.State.Terminated == nil {
 			e.printFunc(deletePodMark, pod, pod.Spec.InitContainers[i])
 		}
 	}
 	for i, s := range pod.Status.ContainerStatuses {
-		if s.State.Terminated != nil {
+		if s.State.Terminated == nil {
 			e.printFunc(deletePodMark, pod, pod.Spec.Containers[i])
 		}
 	}
