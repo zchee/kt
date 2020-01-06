@@ -176,7 +176,7 @@ func (c *Controller) Reconcile(req ctrlreconcile.Request) (result ctrlreconcile.
 			return result, err
 		}
 
-		c.gp.Invoke(&eventStream{
+		if err := c.gp.Invoke(&eventStream{
 			stream: stream,
 			LogEvent: LogEvent{
 				PodName:        pod.Name,
@@ -185,7 +185,9 @@ func (c *Controller) Reconcile(req ctrlreconcile.Request) (result ctrlreconcile.
 				PodColor:       podColor,
 				ContainerColor: containerColor,
 			},
-		})
+		}); err != nil {
+			return result, err
+		}
 	}
 
 	return result, nil
