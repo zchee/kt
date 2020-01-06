@@ -11,7 +11,7 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/zchee/color/v2 v2.0.3
 	github.com/zeebo/xxh3 v0.0.0-20191021174148-b56a7dc3d80c
-	go.opencensus.io v0.22.2
+	go.opentelemetry.io/otel v0.2.1-0.20200106030045-aefc49cfe6aa
 	go.uber.org/multierr v1.4.0
 	go.uber.org/zap v1.12.0
 	k8s.io/api v0.0.0-20190918155943-95b840bb6a1f
