@@ -69,8 +69,7 @@ func New(ctx context.Context, ioStreams stdio.Streams, mgr ctrlmanager.Manager, 
 	}
 	if opts.Debug {
 		lvl.SetLevel(zap.DebugLevel)
-		logOpts = append(logOpts, ctrlzap.Level(&lvl))
-		logOpts = append(logOpts, ctrlzap.UseDevMode(true))
+		logOpts = append(logOpts, []ctrlzap.Opts{ctrlzap.Level(&lvl), ctrlzap.UseDevMode(true)}...)
 	}
 
 	log := ctrlzap.New(logOpts...).WithName("controller")
