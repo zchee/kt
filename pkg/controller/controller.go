@@ -215,7 +215,7 @@ func (c *Controller) ReadStream(v interface{}) {
 
 		event := es.LogEvent
 		event.Message = line
-		if !c.opts.AllNamespaces && len(c.opts.Namespaces) <= 0 {
+		if !c.opts.AllNamespaces && len(c.opts.Namespaces) == 0 {
 			event.Namespace = "" // remove Namespace
 		}
 
