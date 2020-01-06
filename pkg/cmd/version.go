@@ -14,10 +14,9 @@ var (
 
 // Version is the current spinctl version.
 func Version() string {
-	v := version
 	if gitCommit != "" {
-		v += "@" + gitCommit
+		version += "@" + gitCommit
 	}
 
-	return v
+	return version
 }
