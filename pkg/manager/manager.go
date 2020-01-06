@@ -27,7 +27,7 @@ type Manager struct {
 type Options = ctrlmanager.Options
 
 // New returns a new Manager for creating Controllers.
-func New(config *rest.Config, mgrOpts ctrlmanager.Options) (*Manager, error) {
+func New(config *rest.Config, mgrOpts *ctrlmanager.Options) (*Manager, error) {
 	kubescheme.AddToScheme(scheme)
 
 	lvl := zap.NewAtomicLevelAt(zap.InfoLevel)
@@ -40,7 +40,7 @@ func New(config *rest.Config, mgrOpts ctrlmanager.Options) (*Manager, error) {
 	mgrOpts.Scheme = scheme
 	mgrOpts.MetricsBindAddress = "0" // force disable the metrics serving
 
-	mgr, err := ctrlmanager.New(config, mgrOpts)
+	mgr, err := ctrlmanager.New(config, *mgrOpts)
 	if err != nil {
 		logger.Error(err, "failed to create manager")
 		return nil, err

@@ -169,7 +169,7 @@ func (kt *kt) Run(ctx context.Context) cobraRunEFunc {
 			}
 		}
 
-		kt.mgr, err = manager.New(config, mgrOpts)
+		kt.mgr, err = manager.New(config, &mgrOpts)
 		if err != nil {
 			return fmt.Errorf("unable create manager: %w", err)
 		}
