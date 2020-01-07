@@ -36,6 +36,15 @@ const (
 kt tails the Kubernetes logs for a container in a pod or specified resource.`
 )
 
+const (
+	formatNoColor             = "{{.PodName}} {{.ContainerName}} {{.Message}}\n"
+	formatNoColorAllNamespace = "{{.Namespace}} " + formatNoColor
+	formatColor               = "{{color .PodColor .PodName}} {{color .ContainerColor .ContainerName}} {{.Message}}\n"
+	formatColorAllNamespace   = "{{color .PodColor .Namespace}} " + formatColor
+	formatRaw                 = "{{.Message}}"
+	formatJSON                = "{{json .}}\n"
+)
+
 // NewCommand creates the kt command with arguments.
 func NewCommand() *cobra.Command {
 	return NewKTCommand(os.Stdin, os.Stdout, os.Stderr)
@@ -200,20 +209,20 @@ func (kt *kt) Run(ctx context.Context) cobraRunEFunc {
 			switch kt.opts.Output {
 			case "default":
 				if color.NoColor {
-					format = "{{.PodName}} {{.ContainerName}} {{.Message}}\n"
+					format = formatNoColor
 					if kt.opts.AllNamespaces {
-						format = "{{.Namespace}} " + format
+						format = formatNoColorAllNamespace
 					}
 				} else {
-					format = "{{color .PodColor .PodName}} {{color .ContainerColor .ContainerName}} {{.Message}}\n"
+					format = formatColor
 					if kt.opts.AllNamespaces {
-						format = "{{color .PodColor .Namespace}} " + format
+						format = formatColorAllNamespace
 					}
 				}
 			case "raw":
-				format = "{{.Message}}"
+				format = formatRaw
 			case "json":
-				format = "{{json .}}\n"
+				format = formatJSON
 			}
 
 			kt.opts.Format = format
