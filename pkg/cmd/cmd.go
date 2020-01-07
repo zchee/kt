@@ -102,7 +102,7 @@ func NewKTCommand(in io.Reader, out, errOut io.Writer) *cobra.Command {
 	f.StringVarP(&kt.opts.Selector, "selector", "l", kt.opts.Selector, "Selector (label query) to filter on. If present, default to \".*\" for the pod-query.")
 	f.BoolVarP(&kt.opts.Timestamps, "timestamps", "t", kt.opts.Timestamps, "Print timestamps")
 	f.DurationVarP(&kt.opts.Since, "since", "s", kt.opts.Since, "Return logs newer than a relative duration like 5s, 2m, or 3h.")
-	f.IntVar(&kt.opts.Concurrency, "concurrency", kt.opts.Concurrency, "max concurrent reconciler.")
+	f.IntVarP(&kt.opts.Concurrency, "concurrency", "j", kt.opts.Concurrency, "max concurrent reconciler.")
 
 	// misc options
 	f.BoolVarP(&kt.opts.Debug, "debug", "d", false, "debug mode.")
