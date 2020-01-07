@@ -176,13 +176,11 @@ func (kt *kt) Run(ctx context.Context) cobraRunEFunc {
 		switch {
 		case kt.opts.AllNamespaces:
 			mgrOpts.Namespace = metav1.NamespaceAll
-		case len(kt.opts.Namespaces) >= 1:
-			if len(kt.opts.Namespaces) == 1 {
-				mgrOpts.Namespace = kt.opts.Namespaces[0]
-			} else {
-				mgrOpts.NewCache = cache.MultiNamespacedCacheBuilder(kt.opts.Namespaces)
-			}
-		default:
+		case len(kt.opts.Namespaces) == 1:
+			mgrOpts.Namespace = kt.opts.Namespaces[0]
+		case len(kt.opts.Namespaces) >= 2:
+			mgrOpts.NewCache = cache.MultiNamespacedCacheBuilder(kt.opts.Namespaces)
+		default: // not set namespace flag
 			rawConfig, err := clientConfig.RawConfig()
 			if err != nil {
 				return fmt.Errorf("unable get raw config: %w", err)
