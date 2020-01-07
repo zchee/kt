@@ -14,6 +14,9 @@ import (
 	"github.com/spf13/pflag"
 )
 
+const versionTempl = `{{with .Name}}{{printf "%s " .}}{{end}}{{printf "version: %s " .Version}}
+`
+
 func addVersionFlag(cmd *cobra.Command) {
 	cmd.SetVersionTemplate(versionTempl)
 	cmd.Flags().BoolP("version", "v", false, "Show "+cmd.Name()+" version.")

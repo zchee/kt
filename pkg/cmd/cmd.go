@@ -34,9 +34,6 @@ const (
 	usageShort = "kt tails the Kubernetes logs for a container in a pod or specified resource."
 	usageLong  = `
 kt tails the Kubernetes logs for a container in a pod or specified resource.`
-
-	versionTempl = `{{with .Name}}{{printf "%s " .}}{{end}}{{printf "version: %s " .Version}}
-`
 )
 
 // NewCommand creates the kt command with arguments.
