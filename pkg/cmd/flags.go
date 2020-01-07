@@ -53,8 +53,8 @@ func initProfiling() cobraRunEFunc {
 		case "mutex":
 			runtime.SetMutexProfileFraction(1)
 			return nil
-		default:
-			// Check the profile name is valid.
+		default: // handles heap, goroutine and threadcreate profiling
+			// check the profile name is valid
 			if profile := pprof.Lookup(profileName); profile == nil {
 				return fmt.Errorf("unknown profile '%s'", profileName)
 			}
