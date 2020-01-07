@@ -144,7 +144,7 @@ var tmplLog = map[string]interface{}{
 
 // Run runs the tail command.
 func (kt *kt) Run(ctx context.Context) cobraRunEFunc {
-	return func(cmd *cobra.Command, args []string) (err error) {
+	return func(cmd *cobra.Command, args []string) error {
 		if kt.completion != "" {
 			return RunCompletion(kt.ioStreams.Out, kt.completion, cmd)
 		}
