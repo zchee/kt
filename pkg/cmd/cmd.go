@@ -28,6 +28,7 @@ import (
 	"github.com/zchee/kt/pkg/manager"
 	"github.com/zchee/kt/pkg/options"
 	"github.com/zchee/kt/pkg/stdio"
+	"github.com/zchee/kt/pkg/trace"
 )
 
 const (
@@ -145,6 +146,8 @@ var tmplLog = map[string]interface{}{
 // Run runs the tail command.
 func (kt *kt) Run(ctx context.Context) cobraRunEFunc {
 	return func(cmd *cobra.Command, args []string) error {
+		ctx := trace.WithClientTrace(ctx) // inject otel client tracer
+
 		if kt.completion != "" {
 			return RunCompletion(kt.ioStreams.Out, kt.completion, cmd)
 		}
