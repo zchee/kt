@@ -45,6 +45,10 @@ const (
 	formatJSON                = "{{json .}}\n"
 )
 
+const (
+	defaultPodQueryPattern = ".*"
+)
+
 // NewCommand creates the kt command with arguments.
 func NewCommand() *cobra.Command {
 	return NewKTCommand(os.Stdin, os.Stdout, os.Stderr)
@@ -230,20 +234,17 @@ func (kt *kt) Run(ctx context.Context) cobraRunEFunc {
 
 		kt.opts.Template = template.Must(template.New("log").Funcs(tmplLog).Parse(kt.opts.Format))
 
-		query := new(options.Query)
-
-		podQuery := ".*"
+		query := &options.Query{}
+		podQuery := defaultPodQueryPattern
 		if len(args) == 1 {
 			podQuery = args[0]
 		}
 		query.PodQuery = regexp.New(podQuery)
 		query.ContainerQuery = regexp.New(kt.opts.Container)
-
 		query.ContainerState, err = options.NewContainerState(kt.opts.ContainerState)
 		if err != nil {
 			return err
 		}
-
 		kt.opts.Query = query
 
 		kt.ctrl, err = controller.New(ctx, kt.ioStreams, kt.mgr, kt.opts)
