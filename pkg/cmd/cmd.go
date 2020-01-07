@@ -119,6 +119,19 @@ func NewKTCommand(in io.Reader, out, errOut io.Writer) *cobra.Command {
 	return cmd
 }
 
+var tmplLog = map[string]interface{}{
+	"json": func(v interface{}) (string, error) {
+		b, err := json.Marshal(v)
+		if err != nil {
+			return "", err
+		}
+		return unsafes.String(b), nil
+	},
+	"color": func(c color.Color, text string) string {
+		return c.SprintFunc()(text)
+	},
+}
+
 // Run runs the tail command.
 func (kt *kt) Run(ctx context.Context) cobraRunEFunc {
 	return func(cmd *cobra.Command, args []string) (err error) {
@@ -209,19 +222,7 @@ func (kt *kt) Run(ctx context.Context) cobraRunEFunc {
 			kt.opts.Format = format
 		}
 
-		tmplFuncs := map[string]interface{}{
-			"json": func(v interface{}) (string, error) {
-				b, err := json.Marshal(v)
-				if err != nil {
-					return "", err
-				}
-				return unsafes.String(b), nil
-			},
-			"color": func(c color.Color, text string) string {
-				return c.SprintFunc()(text)
-			},
-		}
-		kt.opts.Template = template.Must(template.New("log").Funcs(tmplFuncs).Parse(kt.opts.Format))
+		kt.opts.Template = template.Must(template.New("log").Funcs(tmplLog).Parse(kt.opts.Format))
 
 		query := new(options.Query)
 
