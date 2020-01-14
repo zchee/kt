@@ -38,6 +38,10 @@ kt tails the Kubernetes logs for a container in a pod or specified resource.`
 )
 
 const (
+	envKubeConfig = "KUBECONFIG"
+)
+
+const (
 	formatNoColor             = "{{.PodName}} {{.ContainerName}} {{.Message}}\n"
 	formatNoColorAllNamespace = "{{.Namespace}} " + formatNoColor
 	formatColor               = "{{color .PodColor .PodName}} {{color .ContainerColor .ContainerName}} {{.Message}}\n"
@@ -153,7 +157,7 @@ func (kt *kt) Run(ctx context.Context) cobraRunEFunc {
 		}
 
 		if kt.opts.KubeConfig == "" {
-			kt.opts.KubeConfig = os.Getenv("KUBECONFIG")
+			kt.opts.KubeConfig = os.Getenv(envKubeConfig)
 			if kt.opts.KubeConfig == "" {
 				kt.opts.KubeConfig = clientcmd.RecommendedHomeFile
 			}
