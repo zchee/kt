@@ -20,7 +20,7 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/clientcmd"
-	"sigs.k8s.io/controller-runtime/pkg/cache"
+	ctrlcache "sigs.k8s.io/controller-runtime/pkg/cache"
 
 	"github.com/zchee/kt/pkg/controller"
 	regexp "github.com/zchee/kt/pkg/internal/lazyregexp"
@@ -182,7 +182,7 @@ func (kt *kt) Run(ctx context.Context) cobraRunEFunc {
 		case len(kt.opts.Namespaces) == 1:
 			mgrOpts.Namespace = kt.opts.Namespaces[0]
 		case len(kt.opts.Namespaces) >= 2:
-			mgrOpts.NewCache = cache.MultiNamespacedCacheBuilder(kt.opts.Namespaces)
+			mgrOpts.NewCache = ctrlcache.MultiNamespacedCacheBuilder(kt.opts.Namespaces)
 		default: // not set namespace flag
 			rawConfig, err := clientConfig.RawConfig()
 			if err != nil {
