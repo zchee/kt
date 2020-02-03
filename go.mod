@@ -6,7 +6,7 @@ require (
 	github.com/cenkalti/backoff/v3 v3.2.1
 	github.com/go-logr/logr v0.1.1-0.20190903151443-a1ebd699b195
 	github.com/google/go-cmp v0.3.2-0.20190829225427-b1c9c4891a65
-	github.com/panjf2000/ants/v2 v2.2.2
+	github.com/panjf2000/ants/v2 v2.3.0
 	github.com/spf13/cobra v0.0.6-0.20190805155617-b80588d523ec
 	github.com/spf13/pflag v1.0.5
 	github.com/zchee/color/v2 v2.0.3
