@@ -1,19 +1,19 @@
 module github.com/zchee/kt
 
-go 1.13
+go 1.14
 
 require (
-	github.com/cenkalti/backoff/v3 v3.2.1
+	github.com/cenkalti/backoff/v3 v3.2.2
 	github.com/go-logr/logr v0.1.1-0.20190903151443-a1ebd699b195
-	github.com/google/go-cmp v0.3.2-0.20190829225427-b1c9c4891a65
-	github.com/panjf2000/ants/v2 v2.2.2
-	github.com/spf13/cobra v0.0.6-0.20190805155617-b80588d523ec
+	github.com/google/go-cmp v0.4.1-0.20200329012457-cb8c7f84fcfb
+	github.com/panjf2000/ants/v2 v2.3.2-0.20200312160219-e507ae340f27
+	github.com/spf13/cobra v0.0.7
 	github.com/spf13/pflag v1.0.5
-	github.com/zchee/color/v2 v2.0.3
-	github.com/zeebo/xxh3 v0.0.0-20191021174148-b56a7dc3d80c
-	go.opentelemetry.io/otel v0.2.1-0.20200106030045-aefc49cfe6aa
-	go.uber.org/multierr v1.4.0
-	go.uber.org/zap v1.13.0
+	github.com/zchee/color/v2 v2.0.6
+	github.com/zeebo/xxh3 v0.0.0-20191227220208-65f423c10688
+	go.opentelemetry.io/otel v0.3.0
+	go.uber.org/multierr v1.5.0
+	go.uber.org/zap v1.14.1
 	k8s.io/api v0.0.0-20190918155943-95b840bb6a1f
 	k8s.io/apimachinery v0.0.0-20190913080033-27d36303b655
 	k8s.io/client-go v0.0.0-20190918160344-1fbdaa4c8d90
