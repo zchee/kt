@@ -10,7 +10,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"net/http"
 	"sync"
 	"time"
 
@@ -21,6 +20,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	ctrlbuilder "sigs.k8s.io/controller-runtime/pkg/builder"
 	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -40,18 +40,15 @@ import (
 //
 // Implements a reconcile.Reconciler.
 type Controller struct {
-	// controller-runtime
-	client     ctrlclient.Client
-	controller ctrlcontroller.Controller
-	clientset  kubernetes.Interface
-	mgr        ctrlmanager.Manager
-	predicate  ctrlpredicate.Predicate
-	log        logr.Logger
+	mgr       ctrlmanager.Manager
+	client    ctrlclient.Client
+	clientset kubernetes.Interface
+	predicate ctrlpredicate.Predicate
+	log       logr.Logger
 
-	ctx       context.Context // for implements ctrlreconcile.Reconciler
-	gp        *ants.PoolWithFunc
 	ioStreams stdio.Streams
 	ioMu      sync.Mutex // mutex lock of ioStreams
+	gp        *ants.PoolWithFunc
 	opts      *options.Options
 }
 
@@ -60,23 +57,33 @@ var _ ctrlreconcile.Reconciler = (*Controller)(nil)
 
 const numWorkers = 64
 
+type gpLogger struct {
+	logr.Logger
+}
+
+// Printf implements github.com/panjf2000/ants/v2.Logger
+func (gl gpLogger) Printf(format string, args ...interface{}) {
+	gl.Info(format, args...)
+}
+
 // New returns the new Controller registered with the manager.Manager.
 func New(ctx context.Context, ioStreams stdio.Streams, mgr ctrlmanager.Manager, opts *options.Options) (c *Controller, err error) {
-	lvl := zap.NewAtomicLevelAt(zap.InfoLevel)
-	logOpts := []ctrlzap.Opts{
-		ctrlzap.Level(&lvl),
-		ctrlzap.WriteTo(ioStreams.ErrOut),
-	}
+	lv := zap.NewAtomicLevelAt(zap.ErrorLevel)
 	if opts.Debug {
-		lvl.SetLevel(zap.DebugLevel)
-		logOpts = append(logOpts, []ctrlzap.Opts{ctrlzap.Level(&lvl), ctrlzap.UseDevMode(true)}...)
+		lv.SetLevel(zap.DebugLevel)
 	}
 
-	log := ctrlzap.New(logOpts...).WithName("controller")
-	ctrllog.SetLogger(log)
-	predicateFilter := &PredicateEventFilter{
+	zapOpts := []ctrlzap.Opts{
+		ctrlzap.WriteTo(ioStreams.ErrOut),
+		ctrlzap.Level(&lv),
+		ctrlzap.UseDevMode(lv.Enabled(zap.DebugLevel)),
+	}
+	logger := ctrlzap.New(zapOpts...).WithName("controller")
+	ctrllog.SetLogger(logger)
+
+	predicate := &PredicateEventFilter{
 		ioStreams:    ioStreams,
-		log:          log.WithName("predicate"),
+		log:          logger.WithName("predicate"),
 		isNamespaced: (opts.AllNamespaces || len(opts.Namespaces) > 0),
 		query:        opts.Query,
 	}
@@ -84,14 +91,30 @@ func New(ctx context.Context, ioStreams stdio.Streams, mgr ctrlmanager.Manager, 
 	c = &Controller{
 		client:    mgr.GetClient(),
 		mgr:       mgr,
-		predicate: predicateFilter,
-		log:       log,
-		ctx:       ctx,
+		predicate: predicate,
+		log:       logger,
 		ioStreams: ioStreams,
 		opts:      opts,
 	}
 
-	gp, err := ants.NewPoolWithFunc(numWorkers, c.ReadStream, ants.WithNonblocking(true), ants.WithPreAlloc(true))
+	workerPanicHandler := func(i interface{}) {
+		switch i := i.(type) {
+		case nil:
+			// nothing to do
+		case error:
+			c.log.Error(i, "paniced on worker")
+		default:
+			panic(fmt.Errorf("controller.panic: %v", i))
+		}
+	}
+	gpLogger := gpLogger{Logger: logger}
+	gpOpts := []ants.Option{
+		ants.WithNonblocking(true),
+		ants.WithPreAlloc(true),
+		ants.WithPanicHandler(workerPanicHandler),
+		ants.WithLogger(gpLogger),
+	}
+	gp, err := ants.NewPoolWithFunc(numWorkers, c.ReadStream, gpOpts...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create goroutine pool: %w", err)
 	}
@@ -113,16 +136,10 @@ func New(ctx context.Context, ioStreams stdio.Streams, mgr ctrlmanager.Manager, 
 // SetupWithManager setups the Controller with manager.Manager.
 func (c *Controller) SetupWithManager(mgr ctrlmanager.Manager) (err error) {
 	ctrlOpts := ctrlcontroller.Options{
-		Reconciler:              c,
 		MaxConcurrentReconciles: c.opts.Concurrency,
 	}
 
-	c.controller, err = ctrlbuilder.ControllerManagedBy(mgr).For(&corev1.Pod{}).WithEventFilter(c.predicate).WithOptions(ctrlOpts).Build(c)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return ctrlbuilder.ControllerManagedBy(mgr).For(&corev1.Pod{}).WithEventFilter(c.predicate).WithOptions(ctrlOpts).Complete(c)
 }
 
 const lineDelim = '\n'
@@ -131,16 +148,21 @@ const lineDelim = '\n'
 func (c *Controller) Reconcile(req ctrlreconcile.Request) (result ctrlreconcile.Result, err error) {
 	log := c.log.WithName("Reconcile").WithValues("req.Namespace", req.Namespace, "req.Name", req.Name)
 
+	ctx := context.Background()
+
 	var pod corev1.Pod
-	if err := c.client.Get(c.ctx, req.NamespacedName, &pod); err != nil {
+	if err := c.client.Get(ctx, req.NamespacedName, &pod); err != nil {
 		if ctrlclient.IgnoreNotFound(err) != nil {
 			log.Error(err, "failed to get pod")
 			return result, err
 		}
 		return result, nil
 	}
+	if !c.opts.Query.PodQuery.MatchString(pod.GetName()) {
+		return result, nil // skip if not matched PodQuery
+	}
 
-	podColor, containerColor := findColors(pod.Name)
+	podColor, containerColor := findColors(pod.GetName())
 
 	logOpts := &corev1.PodLogOptions{
 		Follow:     true,
@@ -161,26 +183,26 @@ func (c *Controller) Reconcile(req ctrlreconcile.Request) (result ctrlreconcile.
 		*podLogOpts = *logOpts // shallow copy
 		podLogOpts.Container = container.Name
 
-		stream, err := c.clientset.CoreV1().Pods(pod.Namespace).GetLogs(pod.Name, podLogOpts).Context(c.ctx).Stream()
+		stream, err := c.clientset.CoreV1().Pods(pod.Namespace).GetLogs(pod.GetName(), podLogOpts).Context(ctx).Stream()
 		if err != nil {
-			if errStatus, ok := err.(apierrors.APIStatus); ok {
-				switch errStatus.Status().Code {
-				case http.StatusBadRequest:
-					time.Sleep(boff.GetElapsedTime())
-					continue
-				case http.StatusNotFound:
-					return result, nil
-				}
+			switch apierrors.ReasonForError(err) {
+			case metav1.StatusReasonNotFound:
+				return result, nil // ignore NotFound error
+			case metav1.StatusReasonBadRequest:
+				time.Sleep(boff.GetElapsedTime()) // retry after exponential back off delay
+				continue
 			}
+
+			// fallthrough
 			return result, err
 		}
 
 		if err := c.gp.Invoke(&eventStream{
 			stream: stream,
 			LogEvent: LogEvent{
-				PodName:        pod.Name,
+				PodName:        pod.GetName(),
 				ContainerName:  container.Name,
-				Namespace:      pod.Namespace,
+				Namespace:      pod.GetNamespace(),
 				PodColor:       podColor,
 				ContainerColor: containerColor,
 			},

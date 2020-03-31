@@ -77,7 +77,10 @@ func (e *PredicateEventFilter) printFunc(marker string, pod *corev1.Pod, contain
 	mark := color.New(attr).SprintFunc()
 
 	format := nonNamespaceFmt
-	args := []interface{}{mark(marker), p.SprintfFunc()(pod.Name), c.SprintfFunc()(container.Name)}
+	args := []interface{}{mark(marker), p.SprintfFunc()(pod.Name)}
+	if container != nil {
+		args = append(args, c.SprintfFunc()(container.Name))
+	}
 
 	if e.isNamespaced {
 		format = namespaceFmt
@@ -92,6 +95,7 @@ func (e *PredicateEventFilter) printFunc(marker string, pod *corev1.Pod, contain
 // Create implements predicate.Predicate.
 func (e *PredicateEventFilter) Create(event ctrlevent.CreateEvent) bool {
 	pod := event.Object.(*corev1.Pod)
+	e.log.Info("PredicateEventFilter.Create", "pod", pod)
 
 	if !e.query.PodQuery.MatchString(pod.Name) {
 		return false // skip if not matched PodQuery
@@ -124,6 +128,7 @@ func (e *PredicateEventFilter) Create(event ctrlevent.CreateEvent) bool {
 // Delete implements predicate.Predicate.
 func (e *PredicateEventFilter) Delete(event ctrlevent.DeleteEvent) bool {
 	pod := event.Object.(*corev1.Pod)
+	e.log.Info("PredicateEventFilter.Delete", "pod", pod)
 
 	if !e.query.PodQuery.MatchString(pod.Name) {
 		return false // skip if not matched PodQuery
@@ -132,33 +137,35 @@ func (e *PredicateEventFilter) Delete(event ctrlevent.DeleteEvent) bool {
 	for i := range pod.Status.InitContainerStatuses {
 		state := pod.Status.InitContainerStatuses[i]
 		if state.State.Terminated == nil {
-			e.printFunc(deletePodMark, pod, &pod.Spec.InitContainers[i])
+			e.printFunc(deletePodMark, pod, nil)
 		}
 	}
 	for i := range pod.Status.ContainerStatuses {
 		state := pod.Status.ContainerStatuses[i]
 		if state.State.Terminated == nil {
-			e.printFunc(deletePodMark, pod, &pod.Spec.Containers[i])
+			e.printFunc(deletePodMark, pod, nil)
 		}
 	}
 
-	return false
+	return true
 }
 
 // Update implements predicate.Predicate.
 func (e *PredicateEventFilter) Update(event ctrlevent.UpdateEvent) bool {
 	podQueryFn := func(pod *corev1.Pod) bool {
-		return e.query.PodQuery.MatchString(pod.Name) // skip if not matched PodQuery
+		return e.query.PodQuery.MatchString(pod.Name) // not skip if matched PodQuery
 	}
 
 	podOld := event.ObjectOld.(*corev1.Pod)
-	if matched := podQueryFn(podOld); matched {
-		return true
+	podNew := event.ObjectNew.(*corev1.Pod)
+	e.log.Info("PredicateEventFilter.Update", "podOld", podOld, "podNew", podNew)
+
+	if podQueryFn(podOld) {
+		return false
 	}
 
-	podNew := event.ObjectNew.(*corev1.Pod)
-	if matched := podQueryFn(podNew); matched {
-		return true
+	if podQueryFn(podNew) {
+		return false
 	}
 
 	return true

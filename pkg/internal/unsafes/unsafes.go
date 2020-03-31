@@ -37,17 +37,7 @@ func ByteSlice(s string) []byte {
 
 //go:nosplit
 //go:nocheckptr
+//go:linkname NoEscape runtime.noescape
 
 // NoEscape hides a pointer from escape analysis.
-func NoEscape(p unsafe.Pointer) unsafe.Pointer {
-	x := uintptr(p)
-	return unsafe.Pointer(x ^ 0)
-}
-
-//go:nosplit
-//go:nocheckptr
-
-// NoEscapeUintPtr hides a uintptr from escape analysis.
-func NoEscapeUintPtr(x uintptr) unsafe.Pointer {
-	return unsafe.Pointer(x ^ 0)
-}
+func NoEscape(p unsafe.Pointer) unsafe.Pointer
