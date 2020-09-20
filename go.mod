@@ -4,7 +4,7 @@ go 1.14
 
 require (
 	github.com/cenkalti/backoff/v3 v3.2.2
-	github.com/go-logr/logr v0.1.1-0.20190903151443-a1ebd699b195
+	github.com/go-logr/logr v0.2.1
 	github.com/google/go-cmp v0.4.1-0.20200329012457-cb8c7f84fcfb
 	github.com/panjf2000/ants/v2 v2.3.2-0.20200312160219-e507ae340f27
 	github.com/spf13/cobra v0.0.7
