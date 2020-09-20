@@ -14,14 +14,14 @@ require (
 	go.opentelemetry.io/otel v0.11.0
 	go.uber.org/multierr v1.5.0
 	go.uber.org/zap v1.15.0
-	k8s.io/api v0.19.0
-	k8s.io/apimachinery v0.19.0
-	k8s.io/client-go v0.19.0
+	k8s.io/api v0.19.2
+	k8s.io/apimachinery v0.19.2
+	k8s.io/client-go v0.19.2
 	sigs.k8s.io/controller-runtime v0.6.1-0.20200829220716-c1f971dd49ea
 )
 
 // pin
-replace k8s.io/client-go => k8s.io/client-go v0.19.0 // v0.19.0
+replace k8s.io/client-go => k8s.io/client-go v0.19.2 // v0.19.0
 
 replace (
 	k8s.io/api => k8s.io/api v0.19.0 // k8s.io/client-go@v0.19.0
