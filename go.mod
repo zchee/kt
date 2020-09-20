@@ -13,7 +13,7 @@ require (
 	github.com/zeebo/xxh3 v0.0.0-20191227220208-65f423c10688
 	go.opentelemetry.io/otel v0.11.0
 	go.uber.org/multierr v1.5.0
-	go.uber.org/zap v1.15.0
+	go.uber.org/zap v1.16.0
 	k8s.io/api v0.19.0
 	k8s.io/apimachinery v0.19.0
 	k8s.io/client-go v0.19.0
