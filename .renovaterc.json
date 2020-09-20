@@ -3,11 +3,21 @@
     "config:base"
   ],
   "golang": {
+    "ignoreDeps": [
+      "k8s.io/api",
+      "k8s.io/apimachinery",
+      "k8s.io/client-go",
+      "sigs.k8s.io/controller-runtime"
+    ],
     "postUpdateOptions": ["gomodTidy"]
   },
   "reviewers": [
     "zchee"
   ],
+  "automerge": true,
+  "major": {
+    "automerge": false
+  },
   "rebaseWhen": "behind-base-branch",
   "labels": ["automerge"],
   "packageRules": [
