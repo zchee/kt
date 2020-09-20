@@ -1,0 +1,21 @@
+{
+  "extends": [
+    "config:base"
+  ],
+  "golang": {
+    "postUpdateOptions": ["gomodTidy"]
+  },
+  "reviewers": [
+    "zchee"
+  ],
+  "rebaseWhen": "behind-base-branch",
+  "labels": ["automerge"],
+  "packageRules": [
+      {
+        "managers": ["gomod"],
+        "updateTypes": ["pin", "digest"],
+        "enabled": false
+      }
+  ],
+  "timezone": "Asia/Tokyo"
+}
