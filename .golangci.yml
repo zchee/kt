@@ -141,7 +141,7 @@ issues:
   exclude-use-default: true
   exclude-rules:
     - path: pkg/cmd/cmd.go
-      text: "cognitive complexity 54 of func"
+      text: "func `\\(\\*kt\\).Run` is high"
       linters:
         - gocognit
 
