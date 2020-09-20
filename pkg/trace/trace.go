@@ -6,13 +6,15 @@ package trace
 
 import (
 	"context"
-	"net/http/httptrace"
+	"net/http"
 
-	otelhttptrace "go.opentelemetry.io/otel/plugin/httptrace"
+	"go.opentelemetry.io/otel/api/propagation"
+	"go.opentelemetry.io/otel/api/trace"
 )
 
 // WithClientTrace returns a new context with
 // an embedded otelhttptrace.NewClientTrace based on the parent ctx.
-func WithClientTrace(ctx context.Context) context.Context {
-	return httptrace.WithClientTrace(ctx, otelhttptrace.NewClientTrace(ctx))
+func WithClientTrace(ctx context.Context, req *http.Request) context.Context {
+	props := propagation.New(propagation.WithExtractors(trace.TraceContext{}))
+	return propagation.ExtractHTTP(ctx, props, req.Header)
 }
