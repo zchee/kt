@@ -67,7 +67,7 @@ func (gl gpLogger) Printf(format string, args ...interface{}) {
 }
 
 // New returns the new Controller registered with the manager.Manager.
-func New(ctx context.Context, ioStreams stdio.Streams, mgr ctrlmanager.Manager, opts *options.Options) (c *Controller, err error) {
+func New(ioStreams stdio.Streams, mgr ctrlmanager.Manager, opts *options.Options) (c *Controller, err error) {
 	lv := zap.NewAtomicLevelAt(zap.ErrorLevel)
 	if opts.Debug {
 		lv.SetLevel(zap.DebugLevel)
@@ -145,10 +145,8 @@ func (c *Controller) SetupWithManager(mgr ctrlmanager.Manager) (err error) {
 const lineDelim = '\n'
 
 // Reconcile implements a ctrlreconcile.Reconciler.
-func (c *Controller) Reconcile(req ctrlreconcile.Request) (result ctrlreconcile.Result, err error) {
+func (c *Controller) Reconcile(ctx context.Context, req ctrlreconcile.Request) (result ctrlreconcile.Result, err error) {
 	log := c.log.WithName("Reconcile").WithValues("req.Namespace", req.Namespace, "req.Name", req.Name)
-
-	ctx := context.Background()
 
 	var pod corev1.Pod
 	if err := c.client.Get(ctx, req.NamespacedName, &pod); err != nil {
@@ -183,7 +181,7 @@ func (c *Controller) Reconcile(req ctrlreconcile.Request) (result ctrlreconcile.
 		*podLogOpts = *logOpts // shallow copy
 		podLogOpts.Container = container.Name
 
-		stream, err := c.clientset.CoreV1().Pods(pod.Namespace).GetLogs(pod.GetName(), podLogOpts).Context(ctx).Stream()
+		stream, err := c.clientset.CoreV1().Pods(pod.Namespace).GetLogs(pod.GetName(), podLogOpts).Stream(ctx)
 		if err != nil {
 			switch apierrors.ReasonForError(err) {
 			case metav1.StatusReasonNotFound:

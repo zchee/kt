@@ -252,7 +252,7 @@ func (kt *kt) Run(ctx context.Context) cobraRunEFunc {
 		}
 		kt.opts.Query = query
 
-		kt.ctrl, err = controller.New(ctx, kt.ioStreams, kt.mgr, kt.opts)
+		kt.ctrl, err = controller.New(kt.ioStreams, kt.mgr, kt.opts)
 		if err != nil {
 			return fmt.Errorf("failed to create controller: %w", err)
 		}
