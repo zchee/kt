@@ -8,6 +8,10 @@
   "reviewers": [
     "zchee"
   ],
+  "automerge": true,
+  "major": {
+    "automerge": false
+  },
   "rebaseWhen": "behind-base-branch",
   "labels": ["automerge"],
   "packageRules": [
