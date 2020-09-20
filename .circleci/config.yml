@@ -6,7 +6,9 @@ orbs:
 
 jobs:
   test:
-    executor: golang/buster
+    executor:
+      name: golang/linux
+      tag: "1.15-buster"
     environment:
       GO111MODULE: "on"
     working_directory: /go/src/github.com/zchee/kt
@@ -24,13 +26,13 @@ jobs:
           flags: linux
       - store_artifacts:
           path: /tmp/artifacts
-      - store_artifacts:
-          path: /tmp/artifacts
       - store_test_results:
           path: /tmp/test-results
 
   lint:
-    executor: golang/buster
+    executor:
+      name: golang/linux
+      tag: "1.15-buster"
     working_directory: /go/src/github.com/zchee/kt
     resource_class: large
     steps:
