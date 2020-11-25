@@ -255,6 +255,6 @@ func (kt *kt) Run(ctx context.Context) cobraRunEFunc {
 		}
 		defer kt.ctrl.Close()
 
-		return kt.mgr.Start(ctx.Done())
+		return kt.mgr.Start(ctx)
 	}
 }
