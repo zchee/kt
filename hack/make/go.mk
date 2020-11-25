@@ -42,7 +42,7 @@ GO_CHECKPTR_FLAGS=all=-d=checkptr=1 -d=checkptr=2
 GO_GCFLAGS_DEBUG=all=-N -l -dwarflocationlists=true
 X_METADATA=
 GO_LDFLAGS=-s -w
-GO_LDFLAGS_STATIC="-extldflags=-fno-PIC -static"
+GO_LDFLAGS_STATIC="-extldflags=-static"
 ifneq (${GIT_TAG},)
 	GO_LDFLAGS+=-X=${PKG}/pkg/cmd.version=${GIT_TAG}
 endif
@@ -112,7 +112,7 @@ $(call target,tools/$(@F))
 	cd $$TMP_DIR ;\
 	go mod init tmp > /dev/null 2>&1 ;\
 	CGO_ENABLED=0 GOOS=${GO_OS} GOARCH=${GO_ARCH} GOBIN=${GO_BIN} \
-	  go get -a -u -tags='osusergo,netgo,static,static_build' -ldflags='-s -w "-extldflags=-fno-PIC -static"' -installsuffix 'netgo' ${1}@${2} > /dev/null 2>&1 ;\
+	  go get -a -u -tags='osusergo,netgo,static,static_build' -ldflags='-s -w "-extldflags=-static"' -installsuffix 'netgo' ${1}@${2} > /dev/null 2>&1 ;\
 	rm -rf $$TMP_DIR ;\
 }
 endef
