@@ -8,8 +8,8 @@ import (
 	"context"
 	"net/http"
 
-	"go.opentelemetry.io/otel/api/propagation"
-	"go.opentelemetry.io/otel/api/trace"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/trace"
 )
 
 // WithClientTrace returns a new context with
