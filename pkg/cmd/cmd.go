@@ -247,6 +247,13 @@ func (kt *kt) Run(ctx context.Context) cobraRunEFunc {
 		if err != nil {
 			return err
 		}
+		if kt.opts.Exclude != nil {
+			query.ExcludeQuery = make([]*regexp.Regexp, len(kt.opts.Exclude))
+			for i, exclude := range kt.opts.Exclude {
+				query.ExcludeQuery[i] = regexp.New(exclude)
+			}
+		}
+
 		kt.opts.Query = query
 
 		kt.ctrl, err = controller.New(kt.ioStreams, kt.mgr, kt.opts)

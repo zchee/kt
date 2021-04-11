@@ -44,17 +44,23 @@ type PredicateEventFilter struct {
 
 var _ ctrlpredicate.Predicate = (*PredicateEventFilter)(nil)
 
-func (e *PredicateEventFilter) filterQuery(state *corev1.ContainerStatus) bool {
-	if e.query.ContainerQuery.MatchString(state.Name) {
-		return true // matched ContainerQuery
+func (e *PredicateEventFilter) filterQuery(pod *corev1.Pod, state *corev1.ContainerStatus) bool {
+	for i := range e.query.ExcludeQuery {
+		if e.query.ExcludeQuery[i].MatchString(pod.Name) {
+			return false // matched ExcludeQuery
+		}
 	}
 
-	if e.query.ExcludeContainerQuery != nil && e.query.ExcludeContainerQuery.MatchString(state.Name) {
+	if e.query.ExcludeContainerQuery != nil && e.query.ExcludeContainerQuery.MatchString(pod.Name) {
 		return false // matched ExcludeContainerQuery
 	}
 
 	if !e.query.ContainerState.Match(state.State) {
 		return false // not matched ContainerStatus
+	}
+
+	if e.query.ContainerQuery.MatchString(pod.Name) {
+		return true // matched ContainerQuery
 	}
 
 	return true
@@ -95,7 +101,7 @@ func (e *PredicateEventFilter) printFunc(marker string, pod *corev1.Pod, contain
 // Create implements predicate.Predicate.
 func (e *PredicateEventFilter) Create(event ctrlevent.CreateEvent) bool {
 	pod := event.Object.(*corev1.Pod)
-	e.log.Info("PredicateEventFilter.Create", "pod", pod)
+	e.log.V(1).Info("PredicateEventFilter.Create", "pod", pod)
 
 	if !e.query.PodQuery.MatchString(pod.Name) {
 		return false // skip if not matched PodQuery
@@ -103,8 +109,8 @@ func (e *PredicateEventFilter) Create(event ctrlevent.CreateEvent) bool {
 
 	for i := range pod.Status.InitContainerStatuses {
 		state := pod.Status.InitContainerStatuses[i]
-		if !e.filterQuery(&state) {
-			continue
+		if !e.filterQuery(pod, &state) {
+			return false
 		}
 
 		if state.State.Running != nil {
@@ -113,8 +119,8 @@ func (e *PredicateEventFilter) Create(event ctrlevent.CreateEvent) bool {
 	}
 	for i := range pod.Status.ContainerStatuses {
 		state := pod.Status.ContainerStatuses[i]
-		if !e.filterQuery(&state) {
-			continue
+		if !e.filterQuery(pod, &state) {
+			return false
 		}
 
 		if state.State.Running != nil {
@@ -128,7 +134,7 @@ func (e *PredicateEventFilter) Create(event ctrlevent.CreateEvent) bool {
 // Delete implements predicate.Predicate.
 func (e *PredicateEventFilter) Delete(event ctrlevent.DeleteEvent) bool {
 	pod := event.Object.(*corev1.Pod)
-	e.log.Info("PredicateEventFilter.Delete", "pod", pod)
+	e.log.V(1).Info("PredicateEventFilter.Delete", "pod", pod)
 
 	if !e.query.PodQuery.MatchString(pod.Name) {
 		return false // skip if not matched PodQuery
@@ -136,12 +142,18 @@ func (e *PredicateEventFilter) Delete(event ctrlevent.DeleteEvent) bool {
 
 	for i := range pod.Status.InitContainerStatuses {
 		state := pod.Status.InitContainerStatuses[i]
+		if !e.filterQuery(pod, &state) {
+			return false
+		}
 		if state.State.Terminated == nil {
 			e.printFunc(deletePodMark, pod, nil)
 		}
 	}
 	for i := range pod.Status.ContainerStatuses {
 		state := pod.Status.ContainerStatuses[i]
+		if !e.filterQuery(pod, &state) {
+			return false
+		}
 		if state.State.Terminated == nil {
 			e.printFunc(deletePodMark, pod, nil)
 		}
