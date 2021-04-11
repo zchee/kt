@@ -13,7 +13,7 @@ import (
 	"sync"
 	"time"
 
-	backoff "github.com/cenkalti/backoff/v3"
+	backoff "github.com/cenkalti/backoff/v4"
 	"github.com/go-logr/logr"
 	ants "github.com/panjf2000/ants/v2"
 	"go.uber.org/zap"
