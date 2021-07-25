@@ -146,7 +146,7 @@ issues:
         - gocognit
 
     - path: pkg/manager/manager.go
-      text: "Error return value of `kubescheme.AddToScheme` is not checked"
+      text: "Error return value is not checked"
       linters:
         - errcheck
 
