@@ -5,6 +5,7 @@
 package unsafes
 
 import (
+	"reflect"
 	"unsafe"
 )
 
@@ -15,7 +16,14 @@ func String(b []byte) string {
 		return ""
 	}
 
-	return *(*string)(unsafe.Pointer(&b))
+	p := unsafe.Pointer((*reflect.SliceHeader)(unsafe.Pointer(&b)).Data)
+
+	var s string
+	hdr := (*reflect.StringHeader)(unsafe.Pointer(&s))
+	hdr.Data = uintptr(p)
+	hdr.Len = len(b)
+
+	return s
 }
 
 // ByteSlice converts a strings into the equivalent byte slice without doing the
@@ -26,18 +34,19 @@ func ByteSlice(s string) []byte {
 		return nil
 	}
 
-	sh := *(*StringHeader)(unsafe.Pointer(&s))
-	bh := SliceHeader{
-		Data: sh.Data,
-		Len:  sh.Len,
-		Cap:  sh.Len,
-	}
-	return *(*[]byte)(unsafe.Pointer(&bh))
+	p := unsafe.Pointer((*reflect.StringHeader)(unsafe.Pointer(&s)).Data)
+
+	var b []byte
+	hdr := (*reflect.SliceHeader)(unsafe.Pointer(&b))
+	hdr.Data = uintptr(p)
+	hdr.Cap = len(s)
+	hdr.Len = len(s)
+
+	return b
 }
 
+// NoEscape hides a pointer from escape analysis.
 //go:nosplit
 //go:nocheckptr
 //go:linkname NoEscape runtime.noescape
-
-// NoEscape hides a pointer from escape analysis.
 func NoEscape(p unsafe.Pointer) unsafe.Pointer
