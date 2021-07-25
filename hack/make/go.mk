@@ -106,13 +106,14 @@ endef
 define tools
 $(call target,tools/$(@F))
 @{ \
+	set -x ; \
 	printf "downloadnig $(@F) ...\\n\\n" ;\
 	set -e ;\
 	TMP_DIR=$$(mktemp -d) ;\
 	cd $$TMP_DIR ;\
 	go mod init tmp > /dev/null 2>&1 ;\
 	CGO_ENABLED=0 GOOS=${GO_OS} GOARCH=${GO_ARCH} GOBIN=${GO_BIN} \
-	  go get -a -u -tags='osusergo,netgo,static,static_build' -ldflags='-s -w "-extldflags=-static"' -installsuffix 'netgo' ${1}@${2} > /dev/null 2>&1 ;\
+	  go install -v -tags='osusergo,netgo,static,static_build' -ldflags='-s -w "-extldflags=-static"' -installsuffix 'netgo' ${1}@${2} > /dev/null 2>&1 ;\
 	rm -rf $$TMP_DIR ;\
 }
 endef
@@ -214,7 +215,7 @@ tools/golangci-lint:  # go get 'golangci-lint' binary
 tools/golangci-lint: ${GO_BIN}/golangci-lint
 ${GO_BIN}/golangci-lint:
 ifeq (, $(shell test -f $@))
-	$(call tools,github.com/golangci/golangci-lint/cmd/golangci-lint,master)
+	$(call tools,github.com/golangci/golangci-lint/cmd/golangci-lint,latest)
 GOLANGCI_LINT=${GO_BIN}/golangci-lint
 endif
 
