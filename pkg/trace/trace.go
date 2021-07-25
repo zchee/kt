@@ -7,14 +7,13 @@ package trace
 import (
 	"context"
 	"net/http"
-
-	"go.opentelemetry.io/otel/propagation"
-	"go.opentelemetry.io/otel/trace"
 )
 
 // WithClientTrace returns a new context with
 // an embedded otelhttptrace.NewClientTrace based on the parent ctx.
+//nolint:gocritic
 func WithClientTrace(ctx context.Context, req *http.Request) context.Context {
-	props := propagation.New(propagation.WithExtractors(trace.TraceContext{}))
-	return propagation.ExtractHTTP(ctx, props, req.Header)
+	return ctx
+	// props := propagation.New(propagation.WithExtractors(trace.TraceContext{}))
+	// return propagation.ExtractHTTP(ctx, props, req.Header)
 }
