@@ -67,15 +67,12 @@ func (e *PredicateEventFilter) filterQuery(pod *corev1.Pod, state *corev1.Contai
 }
 
 func (e *PredicateEventFilter) printFunc(marker string, pod *corev1.Pod, container *corev1.Container) {
-	var (
-		attr color.Attribute
-		p, c *color.Color
-	)
+	p, c := findColors(pod.Name)
 
+	var attr color.Attribute
 	switch marker {
 	case createPodMark:
 		attr = createPodAttr
-		p, c = findColors(pod.Name)
 	case deletePodMark:
 		attr = deletePodAttr
 	}
