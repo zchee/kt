@@ -142,8 +142,6 @@ func (c *Controller) SetupWithManager(mgr ctrlmanager.Manager) (err error) {
 	return ctrlbuilder.ControllerManagedBy(mgr).For(&corev1.Pod{}).WithEventFilter(c.predicate).WithOptions(ctrlOpts).Complete(c)
 }
 
-const lineDelim = '\n'
-
 // Reconcile implements a ctrlreconcile.Reconciler.
 func (c *Controller) Reconcile(ctx context.Context, req ctrlreconcile.Request) (result ctrlreconcile.Result, err error) {
 	log := c.log.WithName("Reconcile").WithValues("req.Namespace", req.Namespace, "req.Name", req.Name)
@@ -213,8 +211,9 @@ func (c *Controller) Reconcile(ctx context.Context, req ctrlreconcile.Request) (
 }
 
 type eventStream struct {
-	stream io.ReadCloser
 	LogEvent
+
+	stream io.ReadCloser
 }
 
 func (c *Controller) ReadStream(v interface{}) {
@@ -223,7 +222,7 @@ func (c *Controller) ReadStream(v interface{}) {
 
 	r := bufio.NewReader(es.stream)
 	for {
-		l, err := r.ReadBytes(lineDelim)
+		l, err := r.ReadBytes('\n')
 		if err != nil {
 			if errors.Is(err, io.EOF) {
 				return
