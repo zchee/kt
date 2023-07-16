@@ -19,7 +19,7 @@ const versionTempl = `{{with .Name}}{{printf "%s " .}}{{end}}{{printf "version: 
 
 func addVersionFlag(cmd *cobra.Command) {
 	cmd.SetVersionTemplate(versionTempl)
-	cmd.Flags().BoolP("version", "v", false, "Show "+cmd.Name()+" version.")
+	cmd.Flags().BoolP("version", "v", false, `Show`+cmd.Name()+`version.`)
 }
 
 var (
@@ -28,9 +28,9 @@ var (
 )
 
 func addProfilingFlags(flags *pflag.FlagSet) {
-	flags.StringVar(&profileName, "profile", "none", "Name of profile to capture. One of (none|cpu|heap|goroutine|threadcreate|block|mutex)")
-	flags.StringVar(&profileOut, "profile-out", "profile.pprof", "Name of the file to write the profile to")
+	flags.StringVar(&profileName, "profile", "none", `Name of profile to capture. One of (none|cpu|heap|goroutine|threadcreate|block|mutex)`)
 	flags.MarkHidden("profile")
+	flags.StringVar(&profileOut, "profile-out", "profile.pprof", `Name of the file to write the profile to`)
 	flags.MarkHidden("profile-out")
 }
 

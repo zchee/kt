@@ -10,8 +10,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"runtime"
 	"sync"
 	"time"
+	"unsafe"
 
 	backoff "github.com/cenkalti/backoff/v4"
 	"github.com/go-logr/logr"
@@ -22,16 +24,15 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	ctrlbuilder "sigs.k8s.io/controller-runtime/pkg/builder"
-	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
-	ctrlcontroller "sigs.k8s.io/controller-runtime/pkg/controller"
-	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	crcontroller "sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 	ctrlzap "sigs.k8s.io/controller-runtime/pkg/log/zap"
-	ctrlmanager "sigs.k8s.io/controller-runtime/pkg/manager"
-	ctrlpredicate "sigs.k8s.io/controller-runtime/pkg/predicate"
-	ctrlreconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	"github.com/zchee/kt/pkg/internal/unsafes"
 	"github.com/zchee/kt/pkg/options"
 	"github.com/zchee/kt/pkg/stdio"
 )
@@ -40,11 +41,11 @@ import (
 //
 // Implements a reconcile.Reconciler.
 type Controller struct {
-	mgr       ctrlmanager.Manager
-	client    ctrlclient.Client
-	clientset kubernetes.Interface
-	predicate ctrlpredicate.Predicate
-	log       logr.Logger
+	mgr        manager.Manager
+	client     client.Client
+	clientset  kubernetes.Interface
+	predicator predicate.Predicate
+	log        logr.Logger
 
 	ioStreams stdio.Streams
 	ioMu      sync.Mutex // mutex lock of ioStreams
@@ -53,9 +54,9 @@ type Controller struct {
 }
 
 // compile time check whether the Controller implements ctrlreconciler.Reconciler interface.
-var _ ctrlreconcile.Reconciler = (*Controller)(nil)
+var _ reconcile.Reconciler = (*Controller)(nil)
 
-const numWorkers = 64
+var numWorkers = runtime.GOMAXPROCS(0)
 
 type gpLogger struct {
 	logr.Logger
@@ -67,7 +68,7 @@ func (gl gpLogger) Printf(format string, args ...interface{}) {
 }
 
 // New returns the new Controller registered with the manager.Manager.
-func New(ioStreams stdio.Streams, mgr ctrlmanager.Manager, opts *options.Options) (c *Controller, err error) {
+func New(ioStreams stdio.Streams, mgr manager.Manager, opts *options.Options) (c *Controller, err error) {
 	lv := zap.NewAtomicLevelAt(zap.ErrorLevel)
 	if opts.Debug {
 		lv.SetLevel(zap.DebugLevel)
@@ -79,9 +80,9 @@ func New(ioStreams stdio.Streams, mgr ctrlmanager.Manager, opts *options.Options
 		ctrlzap.UseDevMode(lv.Enabled(zap.DebugLevel)),
 	}
 	logger := ctrlzap.New(zapOpts...).WithName("controller")
-	ctrllog.SetLogger(logger)
+	log.SetLogger(logger)
 
-	predicate := &PredicateEventFilter{
+	predicator := &PredicateEventFilter{
 		ioStreams:    ioStreams,
 		log:          logger.WithName("predicate"),
 		isNamespaced: (opts.AllNamespaces || len(opts.Namespaces) > 0),
@@ -89,12 +90,12 @@ func New(ioStreams stdio.Streams, mgr ctrlmanager.Manager, opts *options.Options
 	}
 
 	c = &Controller{
-		client:    mgr.GetClient(),
-		mgr:       mgr,
-		predicate: predicate,
-		log:       logger,
-		ioStreams: ioStreams,
-		opts:      opts,
+		client:     mgr.GetClient(),
+		mgr:        mgr,
+		predicator: predicator,
+		log:        logger,
+		ioStreams:  ioStreams,
+		opts:       opts,
 	}
 
 	workerPanicHandler := func(i interface{}) {
@@ -134,21 +135,29 @@ func New(ioStreams stdio.Streams, mgr ctrlmanager.Manager, opts *options.Options
 }
 
 // SetupWithManager setups the Controller with manager.Manager.
-func (c *Controller) SetupWithManager(mgr ctrlmanager.Manager) (err error) {
-	ctrlOpts := ctrlcontroller.Options{
+func (c *Controller) SetupWithManager(mgr manager.Manager) (err error) {
+	ctrlOpts := crcontroller.Options{
 		MaxConcurrentReconciles: c.opts.Concurrency,
+		Reconciler:              c,
+		LogConstructor: func(*reconcile.Request) logr.Logger {
+			return logr.Discard()
+		},
 	}
 
-	return ctrlbuilder.ControllerManagedBy(mgr).For(&corev1.Pod{}).WithEventFilter(c.predicate).WithOptions(ctrlOpts).Complete(c)
+	return builder.ControllerManagedBy(mgr).
+		For(&corev1.Pod{}).
+		WithEventFilter(c.predicator).
+		WithOptions(ctrlOpts).
+		Complete(c)
 }
 
 // Reconcile implements a ctrlreconcile.Reconciler.
-func (c *Controller) Reconcile(ctx context.Context, req ctrlreconcile.Request) (result ctrlreconcile.Result, err error) {
+func (c *Controller) Reconcile(ctx context.Context, req reconcile.Request) (result reconcile.Result, err error) {
 	log := c.log.WithName("Reconcile").WithValues("req.Namespace", req.Namespace, "req.Name", req.Name)
 
 	var pod corev1.Pod
 	if err := c.client.Get(ctx, req.NamespacedName, &pod); err != nil {
-		if ctrlclient.IgnoreNotFound(err) != nil {
+		if client.IgnoreNotFound(err) != nil {
 			log.Error(err, "failed to get pod")
 			return result, err
 		}
@@ -230,7 +239,7 @@ func (c *Controller) ReadStream(v interface{}) {
 			c.log.Error(err, "failed to ReadBytes")
 			return
 		}
-		line := trimSpace(unsafes.String(l))
+		line := trimSpace(unsafe.String(&l[0], len(l)))
 
 		event := es.LogEvent
 		event.Message = line

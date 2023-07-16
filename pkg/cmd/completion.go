@@ -13,12 +13,10 @@ import (
 	"go.uber.org/multierr"
 )
 
-var (
-	completionShells = map[string]func(out io.Writer, boilerPlate string, cmd *cobra.Command) error{
-		"bash": runCompletionBash,
-		"zsh":  runCompletionZsh,
-	}
-)
+var completionShells = map[string]func(out io.Writer, boilerPlate string, cmd *cobra.Command) error{
+	"bash": runCompletionBash,
+	"zsh":  runCompletionZsh,
+}
 
 func UsageErrorf(cmd *cobra.Command, format string, args ...interface{}) error {
 	msg := fmt.Sprintf(format, args...)

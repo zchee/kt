@@ -46,6 +46,7 @@ func ByteSlice(s string) []byte {
 }
 
 // NoEscape hides a pointer from escape analysis.
+//
 //go:nosplit
 //go:nocheckptr
 //go:linkname NoEscape runtime.noescape

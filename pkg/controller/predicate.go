@@ -55,8 +55,8 @@ func (e *PredicateEventFilter) filterQuery(pod *corev1.Pod, state *corev1.Contai
 		return false // matched ExcludeContainerQuery
 	}
 
-	if !e.query.ContainerState.Match(state.State) {
-		return false // not matched ContainerStatus
+	if e.query.ContainerState.Match(state.State) {
+		return true // not matched ContainerStatus
 	}
 
 	if e.query.ContainerQuery.MatchString(pod.Name) {

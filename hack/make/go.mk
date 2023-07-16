@@ -57,7 +57,7 @@ ifeq (${CGO_ENABLED},0)
 endif
 GO_BUILDTAGS_STATIC=static static_build
 GO_INSTALLSUFFIX_STATIC=-installsuffix 'netgo'
-GO_FLAGS = -mod=vendor -tags='$(subst $(space),$(comma),${GO_BUILDTAGS})'
+GO_FLAGS = -mod=mod -tags='$(subst $(space),$(comma),${GO_BUILDTAGS})'
 
 GO_FLAGS+=-gcflags='${GO_GCFLAGS}'
 GO_FLAGS+=-ldflags='${GO_LDFLAGS}'

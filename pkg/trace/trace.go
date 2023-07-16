@@ -11,6 +11,7 @@ import (
 
 // WithClientTrace returns a new context with
 // an embedded otelhttptrace.NewClientTrace based on the parent ctx.
+//
 //nolint:gocritic
 func WithClientTrace(ctx context.Context, req *http.Request) context.Context {
 	return ctx

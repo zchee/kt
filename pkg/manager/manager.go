@@ -15,9 +15,7 @@ import (
 	ctrlmanager "sigs.k8s.io/controller-runtime/pkg/manager"
 )
 
-var (
-	scheme = runtime.NewScheme()
-)
+var scheme = runtime.NewScheme()
 
 // Manager represents a ctrlmanager.Manager.
 type Manager struct {
